@@ -1,0 +1,5 @@
+numpy = 1.23.3
+scipy = 1.10.0
+xarray = 2023.1.0
+matplotlib = 3.6.3
+netCDF4 = 1.6.2
