@@ -3,7 +3,6 @@ from netCDF4 import Dataset
 import numpy as np
 from scipy.interpolate import griddata
 import xarray as xr
-import matplotlib.pyplot as plt
 
 # lat 37.27 42.22 lon 8.5 16.75
 
