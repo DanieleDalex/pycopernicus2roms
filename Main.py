@@ -1,3 +1,4 @@
+import sys
 from netCDF4 import Dataset
 import numpy as np
 from scipy.interpolate import griddata
@@ -10,7 +11,14 @@ import matplotlib.pyplot as plt
 
 # depth time lat lon thetao bottomT
 
-nc = xr.open_dataset("myoc_d00_20221123_tem.nc")
+if len(sys.argv) != 3:
+    print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename")
+    sys.exit(-1)
+
+src_filename = sys.argv[1]
+grid_filename = sys.argv[2]
+
+nc = xr.open_dataset(src_filename)
 temp = nc.variables['thetao'][:]
 temp = temp[0, 0, :, :]
 nc = nc.to_dataframe()
@@ -21,7 +29,7 @@ lon = nc['lon']
 lat = nc['lat']
 
 
-nc2 = Dataset("rms3_d03_20230105Z0000.nc.nc4", "r+", format="NETCDF4_CLASSIC")
+nc2 = Dataset(grid_filename, "r+", format="NETCDF4_CLASSIC")
 lon2 = nc2.variables['lon_rho'][:]
 lat2 = nc2.variables['lat_rho'][:]
 
@@ -33,7 +41,7 @@ z[z == 1.e+37] = 'nan'
 
 X, Y = np.meshgrid(lon2, lat2, sparse=True)
 out = griddata((px, py), z, (X, Y), method='linear', fill_value=1.e+37)
-print(out)
+print(out.shape)
 
 # print(nc.variables)
 
