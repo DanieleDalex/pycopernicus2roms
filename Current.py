@@ -44,7 +44,7 @@ def interpolation_lat_lon(arr, i_local):
 
 
 def interpolate_sigma(arr):
-    lat2_local, lon2_local, out4_local, bottomT2_local, depth_local, h_local, s_rho_local = arr
+    lat2_local, lon2_local, out4_local, depth_local, h_local, s_rho_local = arr
 
     out_final_local = np.zeros((len(s_rho_local), len(lat2_local[:, 0]), len(lon2_local[0, :])))
     out_final_local[:] = np.nan
@@ -54,10 +54,10 @@ def interpolate_sigma(arr):
             z_local = np.array(out4_local[:, i, j])
             z_local = z_local[~np.isnan(z_local)]
 
-            z_local = np.resize(z_local, len(z_local) + 1)
-            z_local[len(z_local) - 1] = bottomT2_local[i, j]
+            if len(z_local) == 0:
+                continue
+
             depth_act = depth_local[0:len(z_local)]
-            depth_act[len(z_local) - 1] = h_local[i, j]
 
             depth2 = (s_rho_local * h_local[i, j]) * -1
 
@@ -66,11 +66,6 @@ def interpolate_sigma(arr):
     return out_final_local
 
 
-# lat 37.27 42.22 lon 8.5 16.75
-
-# lat 39.8 41.35 lon 13.1 15.85
-
-# depth time lat lon thetao bottomT
 if __name__ == '__main__':
 
     if len(sys.argv) != 3:
@@ -82,11 +77,10 @@ if __name__ == '__main__':
 
     # source values
     nc = xr.open_dataset(src_filename)
-    temp = nc.variables['thetao'][:]
-    temp = np.array(temp[0, :, :, :])
-    bottomT = nc.variables['bottomT'][:]
-    bottomT = bottomT[0, :, :]
-    bottomT = np.array(bottomT)
+    uo = nc.variables['uo'][:]
+    uo = np.array(uo[0, :, :, :])
+    vo = nc.variables['vo'][:]
+    vo = np.array(vo[0, :, :, :])
 
     lon = nc.variables['lon'][:]
     lat = nc.variables['lat'][:]
@@ -106,92 +100,103 @@ if __name__ == '__main__':
     nc_grid = Dataset(grid_filename, "r+", format="NETCDF4_CLASSIC")
     lon2 = nc_grid.variables['lon_rho'][:]
     lat2 = nc_grid.variables['lat_rho'][:]
+    lon2 = np.array(lon2).flatten()
+    lat2 = np.array(lat2).flatten()
+    lon2_u = nc_grid.variables['lon_u'][:]
+    lat2_u = nc_grid.variables['lat_u'][:]
+    lon2_u = np.array(lon2_u)
+    lat2_u = np.array(lat2_u)
+    lon2_v = nc_grid.variables['lon_v'][:]
+    lat2_v = nc_grid.variables['lat_v'][:]
+    lon2_v = np.array(lon2_v)
+    lat2_v = np.array(lat2_v)
     # depth2 = nc_grid.variables['s_rho'][:]
     h = nc_grid.variables['h'][:]
-    mask = nc_grid.variables['mask_rho'][:]
+    h = np.array(h).flatten()
+    mask_u = nc_grid.variables['mask_u'][:]
+    mask_v = nc_grid.variables['mask_v'][:]
+    mask_u = np.array(mask_u)
+    mask_v = np.array(mask_v)
     s_rho = [-0.983333333333333, -0.95, -0.916666666666667, -0.883333333333333, -0.85, -0.816666666666667,
              -0.783333333333333, -0.75, -0.716666666666667, -0.683333333333333, -0.65, -0.616666666666667,
              -0.583333333333333, -0.55, -0.516666666666667, -0.483333333333333, -0.45, -0.416666666666667,
              -0.383333333333333, -0.35, -0.316666666666667, -0.283333333333333, -0.25, -0.216666666666667,
              -0.183333333333333, -0.15, -0.116666666666667, -0.0833333333333333, -0.05, -0.0166666666666667]
     s_rho = np.array(s_rho)
-    mask = np.array(mask)
-    lon2 = np.array(lon2)
-    lat2 = np.array(lat2)
-    h = np.array(h)
 
     # lon2[0, :] lat2[:, 0]
 
     # use the coordinate as key and index as value
-    lon_dict = {lon2[0, j]: j for j in np.arange(0, len(lon2[0, :]))}
-    lat_dict = {lat2[j, 0]: j for j in np.arange(0, len(lat2[:, 0]))}
+    lon_dict_u = {lon2_u[0, j]: j for j in np.arange(0, len(lon2_u[0, :]))}
+    lat_dict_u = {lat2_u[j, 0]: j for j in np.arange(0, len(lat2_u[:, 0]))}
 
-    last = len(depth)
+    lon_dict_v = {lon2_v[0, j]: j for j in np.arange(0, len(lon2_v[0, :]))}
+    lat_dict_v = {lat2_v[j, 0]: j for j in np.arange(0, len(lat2_v[:, 0]))}
+
+    last_u = len(depth)
+    last_v = len(depth)
     start = tm.time()
+
+    # interpolate h on u and v
+    h_u = griddata((lat2, lon2), h, (lat2_u, lon2_u), method='linear')
+    h_u = np.reshape(h_u, (len(lat2_u[:, 0]), len(lon2_u[0, :])))
+
+    h_v = griddata((lat2, lon2), h, (lat2_v, lon2_v), method='linear')
+    h_v = np.reshape(h_v, (len(lat2_v[:, 0]), len(lon2_v[0, :])))
+
     # interpolate temperature on longitude and latitude
 
     start_x = tm.time()
 
-    out2d = np.zeros((len(depth), len(lat2[:, 0]), len(lon2[0, :])))
-    out2d[:] = np.nan
+    out2d_u = np.zeros((len(depth), len(lat2_u[:, 0]), len(lon2_u[0, :])))
+    out2d_u[:] = np.nan
 
-    data = [temp, latf, lonf, lat2, lon2, depth, h, mask, lat_dict, lon_dict]
+    data = [uo, latf, lonf, lat2_u, lon2_u, depth, h_u, mask_u, lat_dict_u, lon_dict_u]
     items = [(data, i) for i in np.arange(0, len(depth))]
     with Pool(processes=6) as p:
         result = p.starmap(interpolation_lat_lon, items)
 
-    print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
+    # find the last index at witch we have data and move data to out2d
+    for i in np.arange(0, len(depth)):
+        out2d_u[i, :, :] = result[i]
+        if np.isnan(out2d_u[i]).size == 0 and i < last_u:
+            last_u = i
 
-    # 875 secondi
+    out4_u = out2d_u[0:last_u, :, :]
+
+    out2d_v = np.zeros((len(depth), len(lat2_v[:, 0]), len(lon2_v[0, :])))
+    out2d_v[:] = np.nan
+
+    data = [vo, latf, lonf, lat2_v, lon2_v, depth, h_v, mask_v, lat_dict_v, lon_dict_v]
+    items = [(data, i) for i in np.arange(0, len(depth))]
+    with Pool(processes=6) as p:
+        result = p.starmap(interpolation_lat_lon, items)
 
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
-        out2d[i, :, :] = result[i]
-        if np.isnan(out2d[i]).size == 0 and i < last:
-            last = i
+        out2d_v[i, :, :] = result[i]
+        if np.isnan(out2d_v[i]).size == 0 and i < last_v:
+            last_v = i
 
-    out4 = out2d[0:last, :, :]
+    out4_v = out2d_v[0:last_v, :, :]
 
-    # interpolate temperature at sea floor
-    start_b = tm.time()
-
-    bottomT2 = np.zeros((len(lat2[:, 0]), len(lon2[0, :])))
-    bottomT2[:] = np.nan
-
-    z = np.array(bottomT).flatten()
-    out = griddata((latf, lonf), z, (lat2, lon2), method='linear')
-
-    lat_cons = lat2[mask == 1]
-    lon_cons = lon2[mask == 1]
-    lat_cons = np.array(lat_cons)
-    lon_cons = np.array(lon_cons)
-
-    out2 = griddata((lat2[~np.isnan(out)], lon2[~np.isnan(out)]), out[~np.isnan(out)],
-                    (lat_cons, lon_cons), method='linear')
-
-    out2 = np.array(out2)
-
-    for k in np.arange(0, len(lon_cons)):
-        bottomT2[lat_dict[lat_cons[k]], lon_dict[lon_cons[k]]] = out2[k]
-
-    print("bottom temperature interpolation time:", tm.time() - start_b)
-    # 13 secondi
+    print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
 
     # interpolate temperature on sigma
 
     start_s = tm.time()
 
-    data = [lat2, lon2, out4, bottomT2, depth, h, s_rho]
+    data = [lat2_u, lon2_u, out4_u, depth, h_u, s_rho]
 
-    out_final = interpolate_sigma(data)
+    out_final_u = interpolate_sigma(data)
+
+    data = [lat2_v, lon2_v, out4_v, depth, h_v, s_rho]
+
+    out_final_v = interpolate_sigma(data)
 
     print("sigma interpolation time:", tm.time() - start_s)
-    # 27 secondi
-    # 28 secondi
 
     print("total time:", tm.time() - start)
-    # 247 secondi
-    # 936 secondi di esecuzione
 
     # for i in np.arange(0, len(s_rho)):
         # plt.figure(i)
@@ -207,32 +212,8 @@ if __name__ == '__main__':
 
     # X, Y = np.meshgrid(lon, lat)
     # x, y = map(X, Y)
-    x, y = map(lon2, lat2)
-    tem = map.contourf(x, y, out_final[0])
+    x, y = map(lon2_u, lat2_u)
+    tem = map.contourf(x, y, out_final_u[0])
     cb = map.colorbar(tem, "right")
 
     plt.show()
-
-"""
-2d interpolation time: 869.9637989997864 with  1  processes
-2d interpolation time: 449.54563093185425 with  2  processes
-2d interpolation time: 312.03366327285767 with  3  processes
-2d interpolation time: 249.49427700042725 with  4  processes
-2d interpolation time: 218.5005121231079 with  5  processes
-2d interpolation time: 205.65114283561707 with  6  processes
-2d interpolation time: 204.57789087295532 with  7  processes
-2d interpolation time: 221.00535082817078 with  8  processes
-2d interpolation time: 282.692747592926 with  9  processes
-2d interpolation time: 333.8800582885742 with  10  processes
-2d interpolation time: 359.7983169555664 with  11  processes
-2d interpolation time: 504.4210469722748 with  12  processes
-bottom temperature interpolation time: 13.32588791847229
-sigma interpolation time: 47.563385009765625 with  1  processes
-sigma interpolation time: 44.46232509613037 with  2  processes
-sigma interpolation time: 61.36935782432556 with  3  processes
-sigma interpolation time: 80.69376683235168 with  4  processes
-sigma interpolation time: 100.81394720077515 with  5  processes
-sigma interpolation time: 120.50593185424805 with  6  processes
-sigma interpolation time: 141.50088691711426 with  7  processes
-sigma interpolation time: 161.47735404968262 with  8  processes
-"""

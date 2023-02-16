@@ -12,6 +12,7 @@ from multiprocessing import Pool
 def interpolation_lat_lon(arr, i_local):
     so_local, latf_local, lonf_local, lat2_local, lon2_local, depth_local, h_local, mask_local, \
         lat_dict_local, lon_dict_local = arr
+
     z_local = np.array(so_local[i_local, :, :]).flatten()
     out_local = griddata((latf_local, lonf_local), z_local, (lat2_local, lon2_local), method='linear')
 
