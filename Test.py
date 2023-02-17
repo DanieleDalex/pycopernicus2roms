@@ -1,9 +1,7 @@
 import sys
 import time as tm
-import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-from mpl_toolkits.basemap import Basemap
 from netCDF4 import Dataset
 from scipy.interpolate import griddata
 from multiprocessing import Pool
