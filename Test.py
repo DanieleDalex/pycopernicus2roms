@@ -130,12 +130,15 @@ if __name__ == '__main__':
 
     last = len(depth)
     start = tm.time()
+
+    out2d = np.zeros((len(depth), len(lat2[:, 0]), len(lon2[0, :])))
+    out2d[:] = np.nan
+
     # interpolate temperature on longitude and latitude
-    for i in np.arange(1, 13):
+    for i in np.arange(4, 13):
         start_x = tm.time()
 
-        out2d = np.zeros((len(depth), len(lat2[:, 0]), len(lon2[0, :])))
-        out2d[:] = np.nan
+
 
         data = [temp, latf, lonf, lat2, lon2, depth, h, mask, lat_dict, lon_dict]
         items = [(data, i) for i in np.arange(0, len(depth))]
