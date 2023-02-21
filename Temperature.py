@@ -75,7 +75,7 @@ def interpolate_sigma(arr):
 if __name__ == '__main__':
 
     if len(sys.argv) != 5:
-        print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename ")
+        print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename destination_filename time")
         sys.exit(-1)
 
     src_filename = sys.argv[1]
