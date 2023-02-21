@@ -46,7 +46,7 @@ def interpolation_lat_lon(arr, i_local):
 def interpolate_sigma(arr):
     lat2_local, lon2_local, out4_local, depth_local, h_local, s_rho_local = arr
 
-    out_final_local = np.zeros((len(s_rho_local), len(lat2_local[:, 0]), len(lon2_local[0, :])))
+    out_final_local = np.zeros((len(lat2_local[:, 0]), len(lon2_local[0, :]), len(s_rho_local)))
     out_final_local[:] = np.nan
 
     for i in np.arange(0, len(lat2_local[:, 0])):
@@ -61,19 +61,21 @@ def interpolate_sigma(arr):
 
             depth2 = (s_rho_local * h_local[i, j]) * -1
 
-            out_final_local[:, i, j] = np.interp(depth2, depth_act, z_local)
+            out_final_local[i, j, :] = np.interp(depth2, depth_act, z_local)
 
     return out_final_local
 
 
 if __name__ == '__main__':
 
-    if len(sys.argv) != 3:
-        print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename")
+    if len(sys.argv) != 5:
+        print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename destination_filename time")
         sys.exit(-1)
 
     src_filename = sys.argv[1]
     grid_filename = sys.argv[2]
+    destination_filename = sys.argv[3]
+    time = sys.argv[4]
 
     # source values
     nc = xr.open_dataset(src_filename)
@@ -153,6 +155,12 @@ if __name__ == '__main__':
 
     print("total time:", tm.time() - start)
 
+    nc_destination = Dataset(destination_filename, "w")
+    salt_destination = nc_destination['salt'][:]
+    salt_destination = salt_destination[:, :, :, time]
+    salt_destination[:] = out_final[:]
+
+    '''
     for k in np.arange(0, len(s_rho)):
         plt.figure(k)
 
@@ -172,3 +180,4 @@ if __name__ == '__main__':
         cb = map.colorbar(tem, "right")
 
         plt.show()
+        '''

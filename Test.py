@@ -136,8 +136,6 @@ if __name__ == '__main__':
     for i in np.arange(4, 13):
         start_x = tm.time()
 
-
-
         data = [temp, latf, lonf, lat2, lon2, depth, h, mask, lat_dict, lon_dict]
         items = [(data, i) for i in np.arange(0, len(depth))]
         with Pool(processes=i) as p:
@@ -189,3 +187,27 @@ if __name__ == '__main__':
     print("sigma interpolation time:", tm.time() - start_s)
 
     print("total time:", tm.time() - start)
+
+"""
+2d interpolation time: 385.73525500297546 with  4  processes
+2d interpolation time: 314.4968864917755 with  5  processes
+2d interpolation time: 267.1592881679535 with  6  processes
+2d interpolation time: 236.1770899295807 with  7  processes
+2d interpolation time: 201.34804105758667 with  8  processes
+2d interpolation time: 190.83578729629517 with  9  processes
+2d interpolation time: 165.0026445388794 with  10  processes
+2d interpolation time: 157.91517281532288 with  11  processes
+2d interpolation time: 144.9091718196869 with  12  processes
+2d interpolation time: 142.96199750900269 with  13  processes
+2d interpolation time: 132.28387093544006 with  14  processes
+2d interpolation time: 122.06001091003418 with  15  processes
+2d interpolation time: 124.59703946113586 with  16  processes
+2d interpolation time: 122.04236698150635 with  17  processes
+2d interpolation time: 123.84847497940063 with  18  processes
+2d interpolation time: 121.05994057655334 with  19  processes
+2d interpolation time: 118.6550350189209 with  20  processes
+2d interpolation time: 122.44550585746765 with  21  processes
+2d interpolation time: 121.86626815795898 with  22  processes
+2d interpolation time: 122.97285389900208 with  23  processes
+2d interpolation time: 123.54387593269348 with  24  processes
+"""

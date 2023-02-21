@@ -36,12 +36,14 @@ def interpolation_lat_lon(arr):
 
 if __name__ == '__main__':
 
-    if len(sys.argv) != 3:
-        print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename")
+    if len(sys.argv) != 5:
+        print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename destination_filename time")
         sys.exit(-1)
 
     src_filename = sys.argv[1]
     grid_filename = sys.argv[2]
+    destination_filename = sys.argv[3]
+    time = sys.argv[4]
 
     # source values
     nc = xr.open_dataset(src_filename)
@@ -87,8 +89,14 @@ if __name__ == '__main__':
 
     print("2d interpolation time:", tm.time() - start_x)
 
-    # interpolate temperature on sigma
+    '''
+    nc_destination = Dataset(destination_filename, "w")
+    temp_destination = nc_destination['temp'][:]
+    temp_destination = temp_destination[:, :, :, time]
+    temp_destination[:] = out2d[:]
+    '''
 
+    '''
     map = Basemap(projection='merc', llcrnrlon=13., llcrnrlat=39.5, urcrnrlon=16., urcrnrlat=41.5,
                       resolution='i', ellps='WGS84')
 
@@ -105,3 +113,4 @@ if __name__ == '__main__':
     cb = map.colorbar(tem, "right")
 
     plt.show()
+    '''

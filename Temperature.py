@@ -38,7 +38,8 @@ def interpolation_lat_lon(arr, i_local):
     out3_local[:] = np.nan
 
     for k_local in np.arange(0, len(lon_cons_local)):
-        out3_local[lat_dict_local[lat_cons_local[k_local]], lon_dict_local[lon_cons_local[k_local]]] = out2_local[k_local]
+        out3_local[lat_dict_local[lat_cons_local[k_local]], lon_dict_local[lon_cons_local[k_local]]] = out2_local[
+            k_local]
 
     return out3_local
 
@@ -46,7 +47,7 @@ def interpolation_lat_lon(arr, i_local):
 def interpolate_sigma(arr):
     lat2_local, lon2_local, out4_local, bottomT2_local, depth_local, h_local, s_rho_local = arr
 
-    out_final_local = np.zeros((len(s_rho_local), len(lat2_local[:, 0]), len(lon2_local[0, :])))
+    out_final_local = np.zeros((len(lat2_local[:, 0]), len(lon2_local[0, :]), len(s_rho_local)))
     out_final_local[:] = np.nan
 
     for i in np.arange(0, len(lat2_local[:, 0])):
@@ -61,7 +62,7 @@ def interpolate_sigma(arr):
 
             depth2 = (s_rho_local * h_local[i, j]) * -1
 
-            out_final_local[:, i, j] = np.interp(depth2, depth_act, z_local)
+            out_final_local[i, j, :] = np.interp(depth2, depth_act, z_local)
 
     return out_final_local
 
@@ -73,19 +74,21 @@ def interpolate_sigma(arr):
 # depth time lat lon thetao bottomT
 if __name__ == '__main__':
 
-    if len(sys.argv) != 3:
-        print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename")
+    if len(sys.argv) != 5:
+        print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename ")
         sys.exit(-1)
 
     src_filename = sys.argv[1]
     grid_filename = sys.argv[2]
+    destination_filename = sys.argv[3]
+    time = sys.argv[4]
 
     # source values
     nc = xr.open_dataset(src_filename)
     temp = nc.variables['thetao'][:]
-    temp = np.array(temp[0, :, :, :])
+    temp = np.array(temp[time, :, :, :])
     bottomT = nc.variables['bottomT'][:]
-    bottomT = bottomT[0, :, :]
+    bottomT = bottomT[time, :, :]
     bottomT = np.array(bottomT)
 
     lon = nc.variables['lon'][:]
@@ -194,8 +197,14 @@ if __name__ == '__main__':
     # 936 secondi di esecuzione
 
     # for i in np.arange(0, len(s_rho)):
-        # plt.figure(i)
+    # plt.figure(i)
 
+    nc_destination = Dataset(destination_filename, "w")
+    temp_destination = nc_destination['temp'][:]
+    temp_destination = temp_destination[:, :, :, time]
+    temp_destination[:] = out_final[:]
+
+'''
     map = Basemap(projection='merc', llcrnrlon=13., llcrnrlat=39.5, urcrnrlon=16., urcrnrlat=41.5,
                       resolution='i', ellps='WGS84')
 
@@ -212,6 +221,8 @@ if __name__ == '__main__':
     cb = map.colorbar(tem, "right")
 
     plt.show()
+'''
+
 
 """
 2d interpolation time: 869.9637989997864 with  1  processes
