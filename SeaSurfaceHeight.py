@@ -70,7 +70,7 @@ if __name__ == '__main__':
     lat2 = np.array(lat2)
 
     nc_mask = Dataset(mask_filename, "r+")
-    mask = nc_grid.variables['mask_rho'][:]
+    mask = nc_mask.variables['mask_rho'][:]
     mask = np.array(mask)
     nc_mask.close()
 
