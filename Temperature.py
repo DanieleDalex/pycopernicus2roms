@@ -47,7 +47,7 @@ def interpolation_lat_lon(arr, i_local):
 def interpolate_sigma(arr):
     lat2_local, lon2_local, out4_local, bottomT2_local, depth_local, h_local, s_rho_local = arr
 
-    out_final_local = np.zeros((len(lat2_local[:, 0]), len(lon2_local[0, :]), len(s_rho_local)))
+    out_final_local = np.zeros((len(s_rho_local), len(lat2_local[:, 0]), len(lon2_local[0, :])))
     out_final_local[:] = np.nan
 
     for i in np.arange(0, len(lat2_local[:, 0])):
@@ -62,7 +62,7 @@ def interpolate_sigma(arr):
 
             depth2 = (s_rho_local * h_local[i, j]) * -1
 
-            out_final_local[i, j, :] = np.interp(depth2, depth_act, z_local)
+            out_final_local[:, i, j] = np.interp(depth2, depth_act, z_local)
 
     return out_final_local
 
@@ -201,9 +201,8 @@ if __name__ == '__main__':
     # plt.figure(i)
 
     nc_destination = Dataset(destination_filename, "a")
-    temp_destination = nc_destination['temp'][:]
-    temp_destination = temp_destination[:, :, :, time]
-    temp_destination[:] = out_final[:]
+    nc_destination.variables['temp'][time, :, :, :] = out_final[:]
+    nc_destination.close()
 
 '''
     map = Basemap(projection='merc', llcrnrlon=13., llcrnrlat=39.5, urcrnrlon=16., urcrnrlat=41.5,
