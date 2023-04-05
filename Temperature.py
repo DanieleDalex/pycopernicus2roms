@@ -86,9 +86,9 @@ if __name__ == '__main__':
     # source values
     nc = xr.open_dataset(src_filename)
     temp = nc.variables['thetao'][:]
-    temp = np.array(temp[time, :, :, :])
+    temp = np.array(temp[0, :, :, :])
     bottomT = nc.variables['bottomT'][:]
-    bottomT = bottomT[time, :, :]
+    bottomT = bottomT[0, :, :]
     bottomT = np.array(bottomT)
 
     lon = nc.variables['lon'][:]
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     s_rho = np.array(s_rho)
 
     nc_mask = Dataset(mask_filename, "r+")
-    mask = nc_grid.variables['mask_rho'][:]
+    mask = nc_mask.variables['mask_rho'][:]
     mask = np.array(mask)
     nc_mask.close()
 
