@@ -46,7 +46,7 @@ def interpolation_lat_lon(arr, i_local):
 def interpolate_sigma(arr):
     lat2_local, lon2_local, out4_local, depth_local, h_local, s_rho_local = arr
 
-    out_final_local = np.zeros((len(lat2_local[:, 0]), len(lon2_local[0, :]), len(s_rho_local)))
+    out_final_local = np.zeros((len(s_rho_local), len(lat2_local[:, 0]), len(lon2_local[0, :])))
     out_final_local[:] = np.nan
 
     for i in np.arange(0, len(lat2_local[:, 0])):
@@ -61,7 +61,7 @@ def interpolate_sigma(arr):
 
             depth2 = (s_rho_local * h_local[i, j]) * -1
 
-            out_final_local[i, j, :] = np.interp(depth2, depth_act, z_local)
+            out_final_local[:, i, j] = np.interp(depth2, depth_act, z_local)
 
     return out_final_local
 
@@ -69,11 +69,11 @@ def interpolate_sigma(arr):
 if __name__ == '__main__':
 
     if len(sys.argv) != 5:
-        print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename destination_filename time")
+        print("Usage: python " + str(sys.argv[0]) + " source_filename mask_filename destination_filename time")
         sys.exit(-1)
 
     src_filename = sys.argv[1]
-    grid_filename = sys.argv[2]
+    mask_filename = sys.argv[2]
     destination_filename = sys.argv[3]
     time = sys.argv[4]
 
@@ -97,22 +97,22 @@ if __name__ == '__main__':
     latf = np.array(latf)
 
     # destination grid
-    nc_grid = Dataset(grid_filename, "r+", format="NETCDF4_CLASSIC")
+    nc_grid = Dataset(destination_filename, "r+", format="NETCDF4_CLASSIC")
     lon2 = nc_grid.variables['lon_rho'][:]
     lat2 = nc_grid.variables['lat_rho'][:]
-    # depth2 = nc_grid.variables['s_rho'][:]
-    h = nc_grid.variables['h'][:]
-    mask = nc_grid.variables['mask_rho'][:]
-    s_rho = [-0.983333333333333, -0.95, -0.916666666666667, -0.883333333333333, -0.85, -0.816666666666667,
-             -0.783333333333333, -0.75, -0.716666666666667, -0.683333333333333, -0.65, -0.616666666666667,
-             -0.583333333333333, -0.55, -0.516666666666667, -0.483333333333333, -0.45, -0.416666666666667,
-             -0.383333333333333, -0.35, -0.316666666666667, -0.283333333333333, -0.25, -0.216666666666667,
-             -0.183333333333333, -0.15, -0.116666666666667, -0.0833333333333333, -0.05, -0.0166666666666667]
-    s_rho = np.array(s_rho)
-    mask = np.array(mask)
     lon2 = np.array(lon2)
     lat2 = np.array(lat2)
+
+    h = nc_grid.variables['h'][:]
     h = np.array(h)
+
+    s_rho = nc_grid.variables['s_rho'][:]
+    s_rho = np.array(s_rho)
+
+    nc_mask = Dataset(mask_filename, "r+")
+    mask = nc_mask.variables['mask_rho'][:]
+    mask = np.array(mask)
+    nc_mask.close()
 
     # use the coordinate as key and index as value
     lon_dict = {lon2[0, j]: j for j in np.arange(0, len(lon2[0, :]))}
@@ -155,10 +155,9 @@ if __name__ == '__main__':
 
     print("total time:", tm.time() - start)
 
-    nc_destination = Dataset(destination_filename, "w")
-    salt_destination = nc_destination['salt'][:]
-    salt_destination = salt_destination[:, :, :, time]
-    salt_destination[:] = out_final[:]
+    nc_destination = Dataset(destination_filename, "a")
+    nc_destination.variables['salt'][time, :, :, :] = out_final[:]
+    nc_destination.close()
 
     '''
     for k in np.arange(0, len(s_rho)):
@@ -180,4 +179,4 @@ if __name__ == '__main__':
         cb = map.colorbar(tem, "right")
 
         plt.show()
-        '''
+    '''

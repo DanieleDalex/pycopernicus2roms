@@ -37,11 +37,11 @@ def interpolation_lat_lon(arr):
 if __name__ == '__main__':
 
     if len(sys.argv) != 5:
-        print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename destination_filename time")
+        print("Usage: python " + str(sys.argv[0]) + " source_filename mask_filename destination_filename time")
         sys.exit(-1)
 
     src_filename = sys.argv[1]
-    grid_filename = sys.argv[2]
+    mask_filename = sys.argv[2]
     destination_filename = sys.argv[3]
     time = sys.argv[4]
 
@@ -62,14 +62,17 @@ if __name__ == '__main__':
     latf = np.array(latf)
 
     # destination grid
-    nc_grid = Dataset(grid_filename, "r+", format="NETCDF4_CLASSIC")
+    nc_grid = Dataset(destination_filename, "r+", format="NETCDF4_CLASSIC")
+
     lon2 = nc_grid.variables['lon_rho'][:]
     lat2 = nc_grid.variables['lat_rho'][:]
-    # depth2 = nc_grid.variables['s_rho'][:]
-    mask = nc_grid.variables['mask_rho'][:]
-    mask = np.array(mask)
     lon2 = np.array(lon2)
     lat2 = np.array(lat2)
+
+    nc_mask = Dataset(mask_filename, "r+")
+    mask = nc_grid.variables['mask_rho'][:]
+    mask = np.array(mask)
+    nc_mask.close()
 
     # use the coordinate as key and index as value
     lon_dict = {lon2[0, j]: j for j in np.arange(0, len(lon2[0, :]))}
@@ -89,12 +92,9 @@ if __name__ == '__main__':
 
     print("2d interpolation time:", tm.time() - start_x)
 
-    '''
-    nc_destination = Dataset(destination_filename, "w")
-    temp_destination = nc_destination['temp'][:]
-    temp_destination = temp_destination[:, :, :, time]
-    temp_destination[:] = out2d[:]
-    '''
+    nc_destination = Dataset(destination_filename, "a")
+    nc_destination.variables['zeta'][time, :, :] = out2d[:]
+    nc_destination.close()
 
     '''
     map = Basemap(projection='merc', llcrnrlon=13., llcrnrlat=39.5, urcrnrlon=16., urcrnrlat=41.5,

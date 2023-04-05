@@ -15,12 +15,20 @@ ncgridfile = Dataset(grid_filename)
 # Create an empty destination file
 ncdstfile = Dataset(dst, "w", format="NETCDF4")
 
+# set attributes
+ncdstfile.setncatts(ncgridfile.__dict__)
+
 # Create dimensions
 for name, dimension in ncgridfile.dimensions.items():
     ncdstfile.createDimension(name, len(dimension) if not dimension.isunlimited() else None)
 
-ocean_time_dim = ncdstfile.createDimension("ocean_time", 0)
+# create variables
+for name, variable in ncgridfile.variables.items():
+    x = ncdstfile.createVariable(name, variable.datatype, variable.dimensions)
+    ncdstfile[name].setncatts(ncgridfile[name].__dict__)
 
+
+'''
 # Create variables
 lat = ncdstfile.createVariable("lat", "f8", ("eta_rho", "xi_rho"))
 lat.long_name = "latitude of RHO-points"
@@ -128,20 +136,29 @@ svstr.units = "Newton meter-2"
 svstr.scale_factor = 1000.
 svstr.time = "ocean_time"
 
+u = ncdstfile.createVariable("u", "f4", ("ocean_time", "s_rho", "eta_u", "xi_u"), fill_value=1.e+37)
+u.long_name = "u-momentum component"
+u.units = "meter second-1"
+u.coordinates = "lon_u lat_u sc_r ocean_time"
+u.time = "ocean_time"
+
+v = ncdstfile.createVariable("v", "f4", ("ocean_time", "s_rho", "eta_v", "xi_v"), fill_value=1.e+37)
+v.long_name = "v-momentum component"
+v.units = "meter second-1"
+v.coordinates = "lon_v lat_v sc_r ocean_time"
+v.time = "ocean_time"
+'''
+
 # assign longitude and latitude from grid to destination
-lat_rho = ncgridfile.variables['lat_rho'][:]
-lon_rho = ncgridfile.variables['lon_rho'][:]
-lat = lat_rho
-lon = lon_rho
+ncdstfile.variables['lat_rho'][:] = ncgridfile.variables['lat_rho'][:]
+ncdstfile.variables['lon_rho'][:] = ncgridfile.variables['lon_rho'][:]
 
-lat_u_grid = ncgridfile.variables['lat_u'][:]
-lon_u_grid = ncgridfile.variables['lon_u'][:]
-lat_u = lat_u_grid
-lon_u = lon_u_grid
+ncdstfile.variables['lat_u'][:] = ncgridfile.variables['lat_u'][:]
+ncdstfile.variables['lon_u'][:] = ncgridfile.variables['lon_u'][:]
 
-lat_v_grid = ncgridfile.variables['lat_v'][:]
-lon_v_grid = ncgridfile.variables['lon_v'][:]
-lat_v = lat_v_grid
-lon_v = lat_v_grid
+ncdstfile.variables['lat_v'][:] = ncgridfile.variables['lat_v'][:]
+ncdstfile.variables['lon_v'][:] = ncgridfile.variables['lon_v'][:]
 
+ncdstfile.variables['s_rho'][:] = ncgridfile.variables['s_rho'][:]
 
+ncdstfile.variables['h'][:] = ncgridfile.variables['h'][:]

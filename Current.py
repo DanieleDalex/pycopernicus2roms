@@ -38,7 +38,8 @@ def interpolation_lat_lon(arr, i_local):
     out3_local[:] = np.nan
 
     for k_local in np.arange(0, len(lon_cons_local)):
-        out3_local[lat_dict_local[lat_cons_local[k_local]], lon_dict_local[lon_cons_local[k_local]]] = out2_local[k_local]
+        out3_local[lat_dict_local[lat_cons_local[k_local]], lon_dict_local[lon_cons_local[k_local]]] = out2_local[
+            k_local]
 
     return out3_local
 
@@ -46,7 +47,7 @@ def interpolation_lat_lon(arr, i_local):
 def interpolate_sigma(arr):
     lat2_local, lon2_local, out4_local, depth_local, h_local, s_rho_local = arr
 
-    out_final_local = np.zeros((len(lat2_local[:, 0]), len(lon2_local[0, :]), len(s_rho_local)))
+    out_final_local = np.zeros((len(s_rho_local), len(lat2_local[:, 0]), len(lon2_local[0, :])))
     out_final_local[:] = np.nan
 
     for i in np.arange(0, len(lat2_local[:, 0])):
@@ -61,19 +62,36 @@ def interpolate_sigma(arr):
 
             depth2 = (s_rho_local * h_local[i, j]) * -1
 
-            out_final_local[i, j, :] = np.interp(depth2, depth_act, z_local)
+            out_final_local[:, i, j] = np.interp(depth2, depth_act, z_local)
 
     return out_final_local
+
+
+def rotate(u, v, angle_rot, missing_value):
+    m = len(u)
+    n = len(u[0])
+    u = np.array(u).flatten()
+    v = np.array(v).flatten()
+    angle_rot = np.array(angle_rot).flatten()
+    # For each element in u...
+    for i in np.arange(0, len(u)):
+        # Check if all values are not NaN and not a missing value
+        if (u[i] != 'nan' and v[i] != 'nan' and angle_rot[i] != 'nan' and
+                u[i] != missing_value and v[i] != missing_value and angle_rot[i] != missing_value):
+            # Rotate the values
+            u[i] = (u[i] * np.cos(angle_rot[i]) + v[i] * np.sin(angle_rot[i]))
+            v[i] = (v[i] * np.cos(angle_rot[i]) - u[i] * np.sin(angle_rot[i]))
+    return np.reshape(u, (m, n)), np.reshape(v, (m, n))
 
 
 if __name__ == '__main__':
 
     if len(sys.argv) != 5:
-        print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename destination_filename time")
+        print("Usage: python " + str(sys.argv[0]) + " source_filename mask_filename destination_filename time")
         sys.exit(-1)
 
     src_filename = sys.argv[1]
-    grid_filename = sys.argv[2]
+    mask_filename = sys.argv[2]
     destination_filename = sys.argv[3]
     time = sys.argv[4]
 
@@ -99,11 +117,11 @@ if __name__ == '__main__':
     latf = np.array(latf)
 
     # destination grid
-    nc_grid = Dataset(grid_filename, "r+", format="NETCDF4_CLASSIC")
+    nc_grid = Dataset(destination_filename, "r+", format="NETCDF4_CLASSIC")
     lon2 = nc_grid.variables['lon_rho'][:]
     lat2 = nc_grid.variables['lat_rho'][:]
-    lon2 = np.array(lon2).flatten()
-    lat2 = np.array(lat2).flatten()
+    lon2 = np.array(lon2)
+    lat2 = np.array(lat2)
     lon2_u = nc_grid.variables['lon_u'][:]
     lat2_u = nc_grid.variables['lat_u'][:]
     lon2_u = np.array(lon2_u)
@@ -112,23 +130,40 @@ if __name__ == '__main__':
     lat2_v = nc_grid.variables['lat_v'][:]
     lon2_v = np.array(lon2_v)
     lat2_v = np.array(lat2_v)
-    # depth2 = nc_grid.variables['s_rho'][:]
+
     h = nc_grid.variables['h'][:]
-    h = np.array(h).flatten()
-    mask_u = nc_grid.variables['mask_u'][:]
-    mask_v = nc_grid.variables['mask_v'][:]
+    h = np.array(h)
+
+    s_rho = nc_grid.variables['s_rho'][:]
+    s_rho = np.array(s_rho)
+
+    nc_mask = Dataset(mask_filename, "r+")
+    mask = nc_mask.variables['mask_rho'][:]
+    mask_u = nc_mask.variables['mask_u'][:]
+    mask_v = nc_mask.variables['mask_v'][:]
+    mask = np.array(mask)
     mask_u = np.array(mask_u)
     mask_v = np.array(mask_v)
+
+    '''
     s_rho = [-0.983333333333333, -0.95, -0.916666666666667, -0.883333333333333, -0.85, -0.816666666666667,
              -0.783333333333333, -0.75, -0.716666666666667, -0.683333333333333, -0.65, -0.616666666666667,
              -0.583333333333333, -0.55, -0.516666666666667, -0.483333333333333, -0.45, -0.416666666666667,
              -0.383333333333333, -0.35, -0.316666666666667, -0.283333333333333, -0.25, -0.216666666666667,
              -0.183333333333333, -0.15, -0.116666666666667, -0.0833333333333333, -0.05, -0.0166666666666667]
     s_rho = np.array(s_rho)
+    '''
+
+    angle = nc_mask.variables['angle'][:]
 
     # lon2[0, :] lat2[:, 0]
 
     # use the coordinate as key and index as value
+
+
+    lon_dict = {lon2[0, j]: j for j in np.arange(0, len(lon2[0, :]))}
+    lat_dict = {lat2[j, 0]: j for j in np.arange(0, len(lat2[:, 0]))}
+
     lon_dict_u = {lon2_u[0, j]: j for j in np.arange(0, len(lon2_u[0, :]))}
     lat_dict_u = {lat2_u[j, 0]: j for j in np.arange(0, len(lat2_u[:, 0]))}
 
@@ -140,13 +175,19 @@ if __name__ == '__main__':
     start = tm.time()
 
     # interpolate h on u and v
-    h_u = griddata((lat2, lon2), h, (lat2_u, lon2_u), method='linear')
+    h_u = griddata((lat2.flatten(), lon2.flatten()), h.flatten(), (lat2_u, lon2_u), method='linear')
     h_u = np.reshape(h_u, (len(lat2_u[:, 0]), len(lon2_u[0, :])))
 
-    h_v = griddata((lat2, lon2), h, (lat2_v, lon2_v), method='linear')
+    h_v = griddata((lat2.flatten(), lon2.flatten()), h.flatten(), (lat2_v, lon2_v), method='linear')
     h_v = np.reshape(h_v, (len(lat2_v[:, 0]), len(lon2_v[0, :])))
 
-    # interpolate temperature on longitude and latitude
+    # rotate u and v
+    start_r = tm.time()
+    for k in np.arange(0, len(depth)):
+        uo[k], vo[k] = rotate(uo[k], vo[k], angle, 1.e+20)
+    print("rotate time: ", tm.time() - start_r)
+
+    # interpolate current on u coordinate on longitude and latitude
 
     start_x = tm.time()
 
@@ -166,6 +207,8 @@ if __name__ == '__main__':
 
     out4_u = out2d_u[0:last_u, :, :]
 
+    # interpolate current on v coordinate on longitude and latitude
+
     out2d_v = np.zeros((len(depth), len(lat2_v[:, 0]), len(lon2_v[0, :])))
     out2d_v[:] = np.nan
 
@@ -184,7 +227,7 @@ if __name__ == '__main__':
 
     print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
 
-    # interpolate temperature on sigma
+    # interpolate current on sigma
 
     start_s = tm.time()
 
@@ -200,19 +243,28 @@ if __name__ == '__main__':
 
     print("total time:", tm.time() - start)
 
-    nc_destination = Dataset(destination_filename, "w")
+    border_u = np.zeros((len(lat2_u[:, 0]), len(lon2_u[0, :])))
+    border_v = np.zeros((len(lat2_v[:, 0]), len(lon2_v[0, :])))
 
-    u_destination = nc_destination['u'][:]
-    u_destination = u_destination[:, :, :, time]
-    u_destination[:] = out_final_u[:]
+    border_u[:] = np.nan
+    border_v[:] = np.nan
 
-    v_destination = nc_destination['v'][:]
-    v_destination = v_destination[:, :, :, time]
-    v_destination[:] = out_final_v[:]
+    border_u[0, :] = out_final_u[0, 0, :]
+    border_u[:, 0] = out_final_u[0, :, 0]
+    border_v[0, :] = out_final_v[0, 0, :]
+    border_v[:, 0] = out_final_v[0, :, 0]
 
-    """
+    nc_grid.close()
+
+    nc_destination = Dataset(destination_filename, "a")
+
+    nc_destination.variables['u'][time, :, :, :] = out_final_u[:]
+    nc_destination.variables['v'][time, :, :, :] = out_final_v[:]
+    nc_destination.close()
+
+    '''
     map = Basemap(projection='merc', llcrnrlon=13., llcrnrlat=39.5, urcrnrlon=16., urcrnrlat=41.5,
-                      resolution='i', ellps='WGS84')
+                  resolution='i', ellps='WGS84')
 
     parallels = np.arange(39, 42, 0.5)
     meridians = np.arange(12, 17, 0.5)
@@ -223,8 +275,10 @@ if __name__ == '__main__':
     # X, Y = np.meshgrid(lon, lat)
     # x, y = map(X, Y)
     x, y = map(lon2_u, lat2_u)
-    tem = map.contourf(x, y, out_final_u[0])
-    cb = map.colorbar(tem, "right")
+    # tem = map.contourf(x, y, out_final_u[:, :, 0])
+    # cb = map.colorbar(tem, "right")
+    # quiver = map.quiver(x[::20, ::20], y[::20, ::20], out_final_u[::20, ::20, 0], out_final_v[::20, ::20, 0])
+    quiver = map.quiver(x[::20, ::20], y[::20, ::20], border_u[::20, ::20], border_v[::20, ::20])
 
     plt.show()
-    """
+    '''
