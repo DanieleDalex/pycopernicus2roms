@@ -200,7 +200,7 @@ if __name__ == '__main__':
     # for i in np.arange(0, len(s_rho)):
     # plt.figure(i)
 
-    nc_destination = Dataset(destination_filename, "w")
+    nc_destination = Dataset(destination_filename, "a")
     temp_destination = nc_destination['temp'][:]
     temp_destination = temp_destination[:, :, :, time]
     temp_destination[:] = out_final[:]
