@@ -2,12 +2,14 @@ import sys
 
 from netCDF4 import Dataset
 
-if len(sys.argv) != 3:
-    print("Usage: python " + str(sys.argv[0]) + " grid_filename destination_file")
+if len(sys.argv) != 5:
+    print("Usage: python " + str(sys.argv[0]) + " grid_filename destination_file grid_border_file border_file")
     sys.exit(-1)
 
 grid_filename = sys.argv[1]
 dst = sys.argv[2]
+grid_border = sys.argv[3]
+border = sys.argv[4]
 
 # Open the NetCDF domain grid file
 ncgridfile = Dataset(grid_filename)
@@ -26,6 +28,24 @@ for name, dimension in ncgridfile.dimensions.items():
 for name, variable in ncgridfile.variables.items():
     x = ncdstfile.createVariable(name, variable.datatype, variable.dimensions)
     ncdstfile[name].setncatts(ncgridfile[name].__dict__)
+
+# open grid border file
+ncgridborder = Dataset(grid_border, "r+")
+
+# create empty grid file
+ncborder = Dataset(border, "w", format="NETCDF4")
+
+# set attributes
+ncborder.setncatts(ncgridborder.__dict__)
+
+# create dimensions
+for name, dimension in ncgridborder.dimensions.items():
+    ncborder.createDimension(name, len(dimension) if not dimension.isunlimited() else None)
+
+# create variables
+for name, variable in ncgridborder.variables.items():
+    x = ncborder.createVariable(name, variable.datatype, variable.dimensions)
+    ncborder[name].setncatts(ncgridborder[name].__dict__)
 
 
 '''
@@ -162,3 +182,17 @@ ncdstfile.variables['lon_v'][:] = ncgridfile.variables['lon_v'][:]
 ncdstfile.variables['s_rho'][:] = ncgridfile.variables['s_rho'][:]
 
 ncdstfile.variables['h'][:] = ncgridfile.variables['h'][:]
+
+# assign longitude and latitude from grid to border
+ncborder.variables['lat_rho'][:] = ncgridborder.variables['lat_rho'][:]
+ncborder.variables['lon_rho'][:] = ncgridborder.variables['lon_rho'][:]
+
+ncborder.variables['lat_u'][:] = ncgridborder.variables['lat_u'][:]
+ncborder.variables['lon_u'][:] = ncgridborder.variables['lon_u'][:]
+
+ncborder.variables['lat_v'][:] = ncgridborder.variables['lat_v'][:]
+ncborder.variables['lon_v'][:] = ncgridborder.variables['lon_v'][:]
+
+ncborder.variables['s_rho'][:] = ncgridborder.variables['s_rho'][:]
+
+ncborder.variables['h'][:] = ncgridborder.variables['h'][:]

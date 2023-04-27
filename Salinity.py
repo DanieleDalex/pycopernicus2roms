@@ -68,14 +68,16 @@ def interpolate_sigma(arr):
 
 if __name__ == '__main__':
 
-    if len(sys.argv) != 5:
-        print("Usage: python " + str(sys.argv[0]) + " source_filename mask_filename destination_filename time")
+    if len(sys.argv) != 6:
+        print("Usage: python " + str(sys.argv[0]) + "source_filename mask_filename destination_filename "
+                                                    "border_filename time")
         sys.exit(-1)
 
     src_filename = sys.argv[1]
     mask_filename = sys.argv[2]
     destination_filename = sys.argv[3]
-    time = sys.argv[4]
+    border_filename = sys.argv[4]
+    time = int(sys.argv[5])
 
     # source values
     nc = xr.open_dataset(src_filename)
@@ -158,6 +160,11 @@ if __name__ == '__main__':
     nc_destination = Dataset(destination_filename, "a")
     nc_destination.variables['salt'][time, :, :, :] = out_final[:]
     nc_destination.close()
+
+    nc_border = Dataset(border_filename, "a")
+    nc_border.variables['salt_west'] = out_final[0, :, 0]
+    nc_border.variables['salt_south'] = out_final[0, 0, :]
+    nc_border.close()
 
     '''
     for k in np.arange(0, len(s_rho)):

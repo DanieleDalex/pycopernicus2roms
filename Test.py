@@ -189,6 +189,9 @@ if __name__ == '__main__':
     print("total time:", tm.time() - start)
 
 """
+2d interpolation time: 1647.8258061408997 with  1  processes
+2d interpolation time: 765.1405801773071 with  2  processes
+2d interpolation time: 543.2391295433044 with  3  processes
 2d interpolation time: 385.73525500297546 with  4  processes
 2d interpolation time: 314.4968864917755 with  5  processes
 2d interpolation time: 267.1592881679535 with  6  processes

@@ -86,14 +86,16 @@ def rotate(u, v, angle_rot, missing_value):
 
 if __name__ == '__main__':
 
-    if len(sys.argv) != 5:
-        print("Usage: python " + str(sys.argv[0]) + " source_filename mask_filename destination_filename time")
+    if len(sys.argv) != 6:
+        print("Usage: python " + str(sys.argv[0]) + "source_filename mask_filename destination_filename "
+                                                    "border_filename time")
         sys.exit(-1)
 
     src_filename = sys.argv[1]
     mask_filename = sys.argv[2]
     destination_filename = sys.argv[3]
-    time = sys.argv[4]
+    border_filename = sys.argv[4]
+    time = int(sys.argv[5])
 
     # source values
     nc = xr.open_dataset(src_filename)
@@ -243,17 +245,6 @@ if __name__ == '__main__':
 
     print("total time:", tm.time() - start)
 
-    border_u = np.zeros((len(lat2_u[:, 0]), len(lon2_u[0, :])))
-    border_v = np.zeros((len(lat2_v[:, 0]), len(lon2_v[0, :])))
-
-    border_u[:] = np.nan
-    border_v[:] = np.nan
-
-    border_u[0, :] = out_final_u[0, 0, :]
-    border_u[:, 0] = out_final_u[0, :, 0]
-    border_v[0, :] = out_final_v[0, 0, :]
-    border_v[:, 0] = out_final_v[0, :, 0]
-
     nc_grid.close()
 
     nc_destination = Dataset(destination_filename, "a")
@@ -261,6 +252,13 @@ if __name__ == '__main__':
     nc_destination.variables['u'][time, :, :, :] = out_final_u[:]
     nc_destination.variables['v'][time, :, :, :] = out_final_v[:]
     nc_destination.close()
+
+    nc_border = Dataset(border_filename, "a")
+
+    nc_border.variables['u_west'][time, :, :] = out_final_u[0, :, 0]
+    nc_border.variables['u_south'][time, :, :] = out_final_u[0, 0, :]
+    nc_border.variables['v_west'][time, :, :] = out_final_v[0, :, 0]
+    nc_border.variables['v_south'][time, :, :] = out_final_v[0, 0, :]
 
     '''
     map = Basemap(projection='merc', llcrnrlon=13., llcrnrlat=39.5, urcrnrlon=16., urcrnrlat=41.5,
