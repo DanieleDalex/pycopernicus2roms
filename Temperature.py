@@ -2,6 +2,7 @@ import sys
 import time as tm
 import matplotlib.pyplot as plt
 import numpy as np
+import ray
 import xarray as xr
 from mpl_toolkits.basemap import Basemap
 from netCDF4 import Dataset
@@ -144,6 +145,7 @@ if __name__ == '__main__':
 
     data = [temp, latf, lonf, lat2, lon2, depth, h, mask, lat_dict, lon_dict]
     items = [(data, i) for i in np.arange(0, len(depth))]
+    ray.init()
     with Pool(processes=6, ray_address="auto") as p:
         result = p.starmap(interpolation_lat_lon, items)
 
