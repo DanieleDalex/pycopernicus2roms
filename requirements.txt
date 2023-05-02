@@ -3,3 +3,8 @@ scipy == 1.10.0
 xarray == 2023.1.0
 matplotlib == 3.6.3
 netCDF4 == 1.6.2
+apache-libcloud~=3.7.0
+dagon~=0.10.1
+requests~=2.28.2
+setuptools~=65.5.1
+ray~=2.4.0

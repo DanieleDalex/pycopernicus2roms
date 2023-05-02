@@ -100,9 +100,9 @@ if __name__ == '__main__':
     # source values
     nc = xr.open_dataset(src_filename)
     uo = nc.variables['uo'][:]
-    uo = np.array(uo[0, :, :, :])
+    uo = np.array(uo[time, :, :, :])
     vo = nc.variables['vo'][:]
-    vo = np.array(vo[0, :, :, :])
+    vo = np.array(vo[time, :, :, :])
 
     lon = nc.variables['lon'][:]
     lat = nc.variables['lat'][:]

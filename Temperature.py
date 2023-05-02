@@ -6,7 +6,8 @@ import xarray as xr
 from mpl_toolkits.basemap import Basemap
 from netCDF4 import Dataset
 from scipy.interpolate import griddata
-from multiprocessing import Pool
+# from multiprocessing import Pool
+from ray.util.multiprocessing import Pool
 
 
 def interpolation_lat_lon(arr, i_local):
@@ -83,14 +84,14 @@ if __name__ == '__main__':
     mask_filename = sys.argv[2]
     destination_filename = sys.argv[3]
     border_filename = sys.argv[4]
-    time = sys.argv[5]
+    time = int(sys.argv[5])
 
     # source values
     nc = xr.open_dataset(src_filename)
     temp = nc.variables['thetao'][:]
-    temp = np.array(temp[0, :, :, :])
+    temp = np.array(temp[time, :, :, :])
     bottomT = nc.variables['bottomT'][:]
-    bottomT = bottomT[0, :, :]
+    bottomT = bottomT[time, :, :]
     bottomT = np.array(bottomT)
 
     lon = nc.variables['lon'][:]
@@ -143,7 +144,7 @@ if __name__ == '__main__':
 
     data = [temp, latf, lonf, lat2, lon2, depth, h, mask, lat_dict, lon_dict]
     items = [(data, i) for i in np.arange(0, len(depth))]
-    with Pool(processes=6) as p:
+    with Pool(processes=6, ray_address="auto") as p:
         result = p.starmap(interpolation_lat_lon, items)
 
     print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
@@ -207,8 +208,8 @@ if __name__ == '__main__':
     nc_destination.close()
 
     nc_border = Dataset(border_filename, "a")
-    nc_border.variables['temp_west'] = out_final[0, :, 0]
-    nc_border.variables['temp_south'] = out_final[0, 0, :]
+    nc_border.variables['temp_west'][time, :, :] = out_final[0, :, 0]
+    nc_border.variables['temp_south'][time, :, :] = out_final[0, 0, :]
     nc_border.close()
 
 '''

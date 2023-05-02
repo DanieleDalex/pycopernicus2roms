@@ -82,7 +82,7 @@ if __name__ == '__main__':
     # source values
     nc = xr.open_dataset(src_filename)
     so = nc.variables['so'][:]
-    so = np.array(so[0, :, :, :])
+    so = np.array(so[time, :, :, :])
 
     lon = nc.variables['lon'][:]
     lat = nc.variables['lat'][:]
@@ -162,8 +162,8 @@ if __name__ == '__main__':
     nc_destination.close()
 
     nc_border = Dataset(border_filename, "a")
-    nc_border.variables['salt_west'] = out_final[0, :, 0]
-    nc_border.variables['salt_south'] = out_final[0, 0, :]
+    nc_border.variables['salt_west'][time, :, :] = out_final[0, :, 0]
+    nc_border.variables['salt_south'][time, :, :] = out_final[0, 0, :]
     nc_border.close()
 
     '''

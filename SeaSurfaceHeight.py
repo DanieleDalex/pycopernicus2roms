@@ -45,12 +45,12 @@ if __name__ == '__main__':
     mask_filename = sys.argv[2]
     destination_filename = sys.argv[3]
     border_filename = sys.argv[4]
-    time = sys.argv[5]
+    time = int(sys.argv[5])
 
     # source values
     nc = xr.open_dataset(src_filename)
     zos = nc.variables['zos'][:]
-    zos = np.array(zos[0, :, :])
+    zos = np.array(zos[time, :, :])
 
     lon = nc.variables['lon'][:]
     lat = nc.variables['lat'][:]
@@ -99,8 +99,8 @@ if __name__ == '__main__':
     nc_destination.close()
 
     nc_border = Dataset(border_filename, "a")
-    nc_border.variables['zeta_west'] = out2d[:, 0]
-    nc_border.variables['zeta_south'] = out2d[0, :]
+    nc_border.variables['zeta_west'][time, :] = out2d[:, 0]
+    nc_border.variables['zeta_south'][time, :] = out2d[0, :]
     nc_border.close()
 
     '''
