@@ -1,9 +1,9 @@
 import sys
 import time as tm
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-from mpl_toolkits.basemap import Basemap
+# from mpl_toolkits.basemap import Basemap
 from netCDF4 import Dataset
 from scipy.interpolate import griddata
 
@@ -101,6 +101,8 @@ if __name__ == '__main__':
     nc_border = Dataset(border_filename, "a")
     nc_border.variables['zeta_west'][time, :] = out2d[:, 0]
     nc_border.variables['zeta_south'][time, :] = out2d[0, :]
+    nc_border.variables['zeta_east'][time, :] = out2d[:, -1]
+    nc_border.variables['zeta_nord'][time, :] = out2d[-1, :]
     nc_border.close()
 
     '''

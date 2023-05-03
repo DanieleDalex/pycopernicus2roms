@@ -7,8 +7,8 @@ import xarray as xr
 # from mpl_toolkits.basemap import Basemap
 from netCDF4 import Dataset
 from scipy.interpolate import griddata
-# from multiprocessing import Pool
-from ray.util.multiprocessing import Pool
+from multiprocessing import Pool
+# from ray.util.multiprocessing import Pool
 
 
 def interpolation_lat_lon(arr, i_local):
@@ -198,11 +198,9 @@ if __name__ == '__main__':
     out2d_u = np.zeros((len(depth), len(lat2_u[:, 0]), len(lon2_u[0, :])))
     out2d_u[:] = np.nan
 
-    ray.init()
-
     data = [uo, latf, lonf, lat2_u, lon2_u, depth, h_u, mask_u, lat_dict_u, lon_dict_u]
     items = [(data, i) for i in np.arange(0, len(depth))]
-    with Pool(processes=6, ray_address="auto") as p:
+    with Pool(processes=20) as p:
         result = p.starmap(interpolation_lat_lon, items)
 
     # find the last index at witch we have data and move data to out2d
@@ -220,7 +218,7 @@ if __name__ == '__main__':
 
     data = [vo, latf, lonf, lat2_v, lon2_v, depth, h_v, mask_v, lat_dict_v, lon_dict_v]
     items = [(data, i) for i in np.arange(0, len(depth))]
-    with Pool(processes=6, ray_address="auto") as p:
+    with Pool(processes=20) as p:
         result = p.starmap(interpolation_lat_lon, items)
 
     # find the last index at witch we have data and move data to out2d
@@ -261,8 +259,13 @@ if __name__ == '__main__':
 
     nc_border.variables['u_west'][time, :, :] = out_final_u[0, :, 0]
     nc_border.variables['u_south'][time, :, :] = out_final_u[0, 0, :]
+    nc_border.variables['u_east'][time, :, :] = out_final_u[0, :, -1]
+    nc_border.variables['u_nord'][time, :, :] = out_final_u[0, -1, :]
+
     nc_border.variables['v_west'][time, :, :] = out_final_v[0, :, 0]
     nc_border.variables['v_south'][time, :, :] = out_final_v[0, 0, :]
+    nc_border.variables['v_east'][time, :, :] = out_final_v[0, :, -1]
+    nc_border.variables['v_nord'][time, :, :] = out_final_v[0, -1, :]
 
     '''
     map = Basemap(projection='merc', llcrnrlon=13., llcrnrlat=39.5, urcrnrlon=16., urcrnrlat=41.5,

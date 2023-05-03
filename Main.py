@@ -5,33 +5,34 @@ from dagonstar.dagon.task import DagonTask, TaskType
 
 if __name__ == '__main__':
 
-    if len(sys.argv) != 4:
-        print("Usage: python " + str(sys.argv[0]) + " source_filename grid_filename destination_filename")
+    if len(sys.argv) != 5:
+        print("Usage: python " + str(sys.argv[0]) + "source_filename mask_filename destination_filename border_filename")
         sys.exit(-1)
 
     src_filename = sys.argv[1]
-    grid_filename = sys.argv[2]
+    mask_filename = sys.argv[2]
     destination_filename = sys.argv[3]
+    border_filename = sys.argv[4]
 
     workflow = Workflow("DataFlow-Test")
 
     # task create file
-    taskA = DagonTask(TaskType.BATCH, "A", "CreateFile.py " + grid_filename + " " + destination_filename)
+    taskA = DagonTask(TaskType.BATCH, "A", "Python CreateFile.py " + mask_filename + " " + destination_filename)
     workflow.add_task(taskA)
 
     for i in range(9):
 
-        taskB = DagonTask(TaskType.BATCH, "B", "Temperature.py " + src_filename + " " + grid_filename + " " +
-                          destination_filename + " " + str(i))
+        taskB = DagonTask(TaskType.BATCH, "B", "Python Temperature.py " + src_filename + "_tem.nc" + " " +
+                          mask_filename + " " + destination_filename + " " + border_filename + " " + str(i))
 
-        taskC = DagonTask(TaskType.BATCH, "C", "Salinity.py " + src_filename + " " + grid_filename + " " +
-                          destination_filename + " " + str(i))
+        taskC = DagonTask(TaskType.BATCH, "C", "Python Salinity.py " + src_filename + "_sal.nc" + " " + mask_filename
+                          + " " + destination_filename + " " + border_filename + " " + str(i))
 
-        taskD = DagonTask(TaskType.BATCH, "D", "SeaSurfaceHeight.py " + src_filename + " " + grid_filename + " " +
-                          destination_filename + " " + str(i))
+        taskD = DagonTask(TaskType.BATCH, "D", "Python SeaSurfaceHeight.py " + src_filename + "_ssh.nc" + " " +
+                          mask_filename + " " + destination_filename + " " + border_filename + " " + str(i))
 
-        taskE = DagonTask(TaskType.BATCH, "E", "Current.py " + src_filename + " " + grid_filename + " " +
-                          destination_filename + " " + str(i))
+        taskE = DagonTask(TaskType.BATCH, "E", "Python Current.py " + src_filename + "_cur.nc" + " " +
+                          mask_filename + " " + destination_filename + " " + border_filename + " " + str(i))
 
         workflow.add_task(taskB)
         workflow.add_task(taskC)
