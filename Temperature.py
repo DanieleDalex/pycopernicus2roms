@@ -129,7 +129,6 @@ if __name__ == '__main__':
     mask = nc_mask.variables['mask_rho'][:]
     mask = np.array(mask)
     nc_mask.close()
-    nc_mask.close()
 
     # lon2[0, :] lat2[:, 0]
 

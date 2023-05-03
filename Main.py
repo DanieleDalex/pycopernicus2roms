@@ -17,21 +17,22 @@ if __name__ == '__main__':
     workflow = Workflow("DataFlow-Test")
 
     # task create file
-    taskA = DagonTask(TaskType.BATCH, "A", "Python CreateFile.py " + mask_filename + " " + destination_filename)
+    taskA = DagonTask(TaskType.BATCH, "A", "python CreateFile.py " + mask_filename + " " + destination_filename + " " +
+                      grid_border_filename + " " + border_filename)
     workflow.add_task(taskA)
 
     for i in range(9):
 
-        taskB = DagonTask(TaskType.BATCH, "B", "Python Temperature.py " + src_filename + "_tem.nc" + " " +
+        taskB = DagonTask(TaskType.BATCH, "B", "python Temperature.py " + src_filename + "_tem.nc" + " " +
                           mask_filename + " " + destination_filename + " " + border_filename + " " + str(i))
 
-        taskC = DagonTask(TaskType.BATCH, "C", "Python Salinity.py " + src_filename + "_sal.nc" + " " + mask_filename
+        taskC = DagonTask(TaskType.BATCH, "C", "python Salinity.py " + src_filename + "_sal.nc" + " " + mask_filename
                           + " " + destination_filename + " " + border_filename + " " + str(i))
 
-        taskD = DagonTask(TaskType.BATCH, "D", "Python SeaSurfaceHeight.py " + src_filename + "_ssh.nc" + " " +
+        taskD = DagonTask(TaskType.BATCH, "D", "python SeaSurfaceHeight.py " + src_filename + "_ssh.nc" + " " +
                           mask_filename + " " + destination_filename + " " + border_filename + " " + str(i))
 
-        taskE = DagonTask(TaskType.BATCH, "E", "Python Current.py " + src_filename + "_cur.nc" + " " +
+        taskE = DagonTask(TaskType.BATCH, "E", "python Current.py " + src_filename + "_cur.nc" + " " +
                           mask_filename + " " + destination_filename + " " + border_filename + " " + str(i))
 
         workflow.add_task(taskB)
