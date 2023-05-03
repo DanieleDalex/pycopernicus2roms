@@ -2,6 +2,7 @@ import sys
 
 from netCDF4 import Dataset
 
+
 if len(sys.argv) != 5:
     print("Usage: python " + str(sys.argv[0]) + " grid_filename destination_file grid_border_file border_file")
     sys.exit(-1)
@@ -183,6 +184,16 @@ ncdstfile.variables['s_rho'][:] = ncgridfile.variables['s_rho'][:]
 
 ncdstfile.variables['h'][:] = ncgridfile.variables['h'][:]
 
+ncdstfile.variables['theta_b'][:] = ncgridfile.variables['theta_b'][:]
+ncdstfile.variables['theta_s'][:] = ncgridfile.variables['theta_s'][:]
+
+ncdstfile.variables['hc'][:] = ncgridfile.variables['hc'][:]
+
+ncdstfile.variables['Cs_r'][:] = ncgridfile.variables['Cs_r'][:]
+ncdstfile.variables['sc_r'][:] = ncgridfile.variables['sc_r'][:]
+ncdstfile.close()
+
+
 # assign longitude and latitude from grid to border
 ncborder.variables['lat_rho'][:] = ncgridborder.variables['lat_rho'][:]
 ncborder.variables['lon_rho'][:] = ncgridborder.variables['lon_rho'][:]
@@ -196,3 +207,12 @@ ncborder.variables['lon_v'][:] = ncgridborder.variables['lon_v'][:]
 ncborder.variables['s_rho'][:] = ncgridborder.variables['s_rho'][:]
 
 ncborder.variables['h'][:] = ncgridborder.variables['h'][:]
+
+ncborder.variables['theta_b'][:] = ncgridborder.variables['theta_b'][:]
+ncborder.variables['theta_s'][:] = ncgridborder.variables['theta_s'][:]
+
+ncborder.variables['hc'][:] = ncgridborder.variables['hc'][:]
+
+ncborder.variables['Cs_r'][:] = ncgridborder.variables['Cs_r'][:]
+ncborder.variables['sc_r'][:] = ncgridborder.variables['sc_r'][:]
+ncborder.close()

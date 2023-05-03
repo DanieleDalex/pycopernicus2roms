@@ -1,5 +1,6 @@
 import sys
 import time as tm
+import netCDF4
 # import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
@@ -107,6 +108,7 @@ if __name__ == '__main__':
     latf = nc_framel['lat']
     lonf = np.array(lonf)
     latf = np.array(latf)
+    nc.close()
 
     # destination grid
     nc_grid = Dataset(destination_filename, "r+", format="NETCDF4_CLASSIC")
@@ -121,10 +123,12 @@ if __name__ == '__main__':
 
     s_rho = nc_grid.variables['s_rho'][:]
     s_rho = np.array(s_rho)
+    nc_grid.close()
 
     nc_mask = Dataset(mask_filename, "r+")
     mask = nc_mask.variables['mask_rho'][:]
     mask = np.array(mask)
+    nc_mask.close()
     nc_mask.close()
 
     # lon2[0, :] lat2[:, 0]
@@ -205,6 +209,12 @@ if __name__ == '__main__':
 
     nc_destination = Dataset(destination_filename, "a")
     nc_destination.variables['temp'][time, :, :, :] = out_final[:]
+
+    nc = Dataset(src_filename, "r+")
+    time_var = nc.variables['time']
+    dtime = netCDF4.num2date(time_var[:], time_var.units)
+    nc.close()
+    nc_destination.variables['ocean_time'] = netCDF4.date2num(dtime, nc_destination.variables['ocean_time'].units)
     nc_destination.close()
 
     nc_border = Dataset(border_filename, "a")
@@ -212,6 +222,9 @@ if __name__ == '__main__':
     nc_border.variables['temp_south'][time, :, :] = out_final[0, 0, :]
     nc_border.variables['temp_east'][time, :, :] = out_final[0, :, -1]
     nc_border.variables['temp_nord'][time, :, :] = out_final[0, -1, :]
+
+    nc_border.variables['ocean_time'] = netCDF4.date2num(dtime, nc_border.variables['ocean_time'].units)
+
     nc_border.close()
 
 '''

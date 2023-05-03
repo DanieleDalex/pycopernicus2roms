@@ -8,6 +8,8 @@ import xarray as xr
 from netCDF4 import Dataset
 from scipy.interpolate import griddata
 from multiprocessing import Pool
+
+
 # from ray.util.multiprocessing import Pool
 
 
@@ -84,6 +86,25 @@ def rotate(u, v, angle_rot, missing_value):
             u[i] = (u[i] * np.cos(angle_rot[i]) + v[i] * np.sin(angle_rot[i]))
             v[i] = (v[i] * np.cos(angle_rot[i]) - u[i] * np.sin(angle_rot[i]))
     return np.reshape(u, (m, n)), np.reshape(v, (m, n))
+
+
+def calculate_bar(lat_local, lon_local, mask_local, s_rho_local, u_local):
+    ubar_local = np.zeros((len(lat_local[:, 0]), len(lon_local[0, :])))
+
+    for i_local in np.arange(0, len(lat_local[:, 0])):
+        for j_local in np.arange(0, len(lon_local[0, :])):
+            if mask_local[i_local][j_local] == 1:
+                count_local = 0
+                for k_local in np.arange(0, len(s_rho_local)):
+                    if u_local[k_local][i_local][j_local] != np.nan:
+                        ubar_local[i_local][j_local] += u_local[k_local][i_local][j_local]
+                        count_local += 1
+                if count_local > 1:
+                    ubar_local[i_local][j_local] = ubar_local[i_local][j_local] / count_local
+            else:
+                ubar_local[i_local][j_local] = np.nan
+
+    return ubar_local
 
 
 if __name__ == '__main__':
@@ -163,7 +184,6 @@ if __name__ == '__main__':
     # lon2[0, :] lat2[:, 0]
 
     # use the coordinate as key and index as value
-
 
     lon_dict = {lon2[0, j]: j for j in np.arange(0, len(lon2[0, :]))}
     lat_dict = {lat2[j, 0]: j for j in np.arange(0, len(lat2[:, 0]))}
@@ -245,6 +265,14 @@ if __name__ == '__main__':
 
     print("sigma interpolation time:", tm.time() - start_s)
 
+    start_b = tm.time()
+
+    ubar = calculate_bar(lat2_u, lon2_u, mask_u, s_rho, out_final_u)
+
+    vbar = calculate_bar(lat2_v, lon2_v, mask_v, s_rho, out_final_v)
+
+    print("calculate bar time:", tm.time() - start_b)
+
     print("total time:", tm.time() - start)
 
     nc_grid.close()
@@ -253,6 +281,9 @@ if __name__ == '__main__':
 
     nc_destination.variables['u'][time, :, :, :] = out_final_u[:]
     nc_destination.variables['v'][time, :, :, :] = out_final_v[:]
+
+    nc_destination.variables['ubar'][time, :, :] = ubar[:]
+    nc_destination.variables['vbar'][time, :, :] = vbar[:]
     nc_destination.close()
 
     nc_border = Dataset(border_filename, "a")
@@ -266,6 +297,17 @@ if __name__ == '__main__':
     nc_border.variables['v_south'][time, :, :] = out_final_v[0, 0, :]
     nc_border.variables['v_east'][time, :, :] = out_final_v[0, :, -1]
     nc_border.variables['v_nord'][time, :, :] = out_final_v[0, -1, :]
+
+    nc_border.variables['ubar_west'][time, :] = ubar[:, 0]
+    nc_border.variables['ubar_south'][time, :] = ubar[0, :]
+    nc_border.variables['ubar_east'][time, :] = ubar[:, -1]
+    nc_border.variables['ubar_nord'][time, :] = ubar[-1, :]
+
+    nc_border.variables['vbar_west'][time, :] = vbar[:, 0]
+    nc_border.variables['vbar_south'][time, :] = vbar[0, :]
+    nc_border.variables['vbar_east'][time, :] = vbar[:, -1]
+    nc_border.variables['vbar_nord'][time, :] = vbar[-1, :]
+    nc_border.close()
 
     '''
     map = Basemap(projection='merc', llcrnrlon=13., llcrnrlat=39.5, urcrnrlon=16., urcrnrlat=41.5,
