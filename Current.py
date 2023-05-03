@@ -291,22 +291,22 @@ if __name__ == '__main__':
     nc_border.variables['u_west'][time, :, :] = out_final_u[0, :, 0]
     nc_border.variables['u_south'][time, :, :] = out_final_u[0, 0, :]
     nc_border.variables['u_east'][time, :, :] = out_final_u[0, :, -1]
-    nc_border.variables['u_nord'][time, :, :] = out_final_u[0, -1, :]
+    nc_border.variables['u_north'][time, :, :] = out_final_u[0, -1, :]
 
     nc_border.variables['v_west'][time, :, :] = out_final_v[0, :, 0]
     nc_border.variables['v_south'][time, :, :] = out_final_v[0, 0, :]
     nc_border.variables['v_east'][time, :, :] = out_final_v[0, :, -1]
-    nc_border.variables['v_nord'][time, :, :] = out_final_v[0, -1, :]
+    nc_border.variables['v_north'][time, :, :] = out_final_v[0, -1, :]
 
     nc_border.variables['ubar_west'][time, :] = ubar[:, 0]
     nc_border.variables['ubar_south'][time, :] = ubar[0, :]
     nc_border.variables['ubar_east'][time, :] = ubar[:, -1]
-    nc_border.variables['ubar_nord'][time, :] = ubar[-1, :]
+    nc_border.variables['ubar_north'][time, :] = ubar[-1, :]
 
     nc_border.variables['vbar_west'][time, :] = vbar[:, 0]
     nc_border.variables['vbar_south'][time, :] = vbar[0, :]
     nc_border.variables['vbar_east'][time, :] = vbar[:, -1]
-    nc_border.variables['vbar_nord'][time, :] = vbar[-1, :]
+    nc_border.variables['vbar_north'][time, :] = vbar[-1, :]
     nc_border.close()
 
     '''

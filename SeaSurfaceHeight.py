@@ -102,7 +102,7 @@ if __name__ == '__main__':
     nc_border.variables['zeta_west'][time, :] = out2d[:, 0]
     nc_border.variables['zeta_south'][time, :] = out2d[0, :]
     nc_border.variables['zeta_east'][time, :] = out2d[:, -1]
-    nc_border.variables['zeta_nord'][time, :] = out2d[-1, :]
+    nc_border.variables['zeta_north'][time, :] = out2d[-1, :]
     nc_border.close()
 
     '''

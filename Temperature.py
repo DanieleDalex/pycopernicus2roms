@@ -220,7 +220,7 @@ if __name__ == '__main__':
     nc_border.variables['temp_west'][time, :, :] = out_final[0, :, 0]
     nc_border.variables['temp_south'][time, :, :] = out_final[0, 0, :]
     nc_border.variables['temp_east'][time, :, :] = out_final[0, :, -1]
-    nc_border.variables['temp_nord'][time, :, :] = out_final[0, -1, :]
+    nc_border.variables['temp_north'][time, :, :] = out_final[0, -1, :]
 
     nc_border.variables['ocean_time'] = netCDF4.date2num(dtime, nc_border.variables['ocean_time'].units)
 

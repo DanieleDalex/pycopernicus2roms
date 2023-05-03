@@ -166,7 +166,7 @@ if __name__ == '__main__':
     nc_border.variables['salt_west'][time, :, :] = out_final[0, :, 0]
     nc_border.variables['salt_south'][time, :, :] = out_final[0, 0, :]
     nc_border.variables['salt_east'][time, :, :] = out_final[0, :, -1]
-    nc_border.variables['salt_nord'][time, :, :] = out_final[0, -1, :]
+    nc_border.variables['salt_north'][time, :, :] = out_final[0, -1, :]
     nc_border.close()
 
     '''
