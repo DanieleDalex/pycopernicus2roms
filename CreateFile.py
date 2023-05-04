@@ -189,6 +189,12 @@ ncdstfile.variables['theta_s'][:] = ncgridfile.variables['theta_s'][:]
 
 ncdstfile.variables['hc'][:] = ncgridfile.variables['hc'][:]
 
+ncdstfile.varialbes['Tcline'][:] = ncgridfile.variables['Tcline'][:]
+
+ncdstfile.variables['tend'][:] = ncgridfile.variables['tend'][:]
+
+ncdstfile.variables['scrum_time'][:] = ncgridfile.variables['scrum_time'][:]
+
 ncdstfile.variables['Cs_r'][:] = ncgridfile.variables['Cs_r'][:]
 ncdstfile.variables['sc_r'][:] = ncgridfile.variables['sc_r'][:]
 ncdstfile.close()
@@ -212,6 +218,10 @@ ncborder.variables['theta_b'][:] = ncgridborder.variables['theta_b'][:]
 ncborder.variables['theta_s'][:] = ncgridborder.variables['theta_s'][:]
 
 ncborder.variables['hc'][:] = ncgridborder.variables['hc'][:]
+
+ncborder.variables['Tcline'][:] = ncgridborder.variables['Tcline'][:]
+
+ncborder.variables['z_r'][:] = ncgridborder.variables['z_r'][:]
 
 ncborder.variables['Cs_r'][:] = ncgridborder.variables['Cs_r'][:]
 ncborder.variables['sc_r'][:] = ncgridborder.variables['sc_r'][:]
