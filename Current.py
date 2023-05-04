@@ -276,8 +276,8 @@ if __name__ == '__main__':
 
     print("total time:", tm.time() - start)
 
-    out_final_u[out_final_u == np.nan] = 1.e+37
-    out_final_v[out_final_v == np.nan] = 1.e+37
+    out_final_u[np.isnan(out_final_u)] = 1.e+37
+    out_final_v[np.isnan(out_final_v)] = 1.e+37
 
     nc_destination = Dataset(destination_filename, "a")
 

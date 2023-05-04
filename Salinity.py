@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
     print("total time:", tm.time() - start)
 
-    out_final[out_final == np.nan] = 1.e+37
+    out_final[np.isnan(out_final)] = 1.e+37
 
     nc_destination = Dataset(destination_filename, "a")
     nc_destination.variables['salt'][time, :, :, :] = out_final[:]
