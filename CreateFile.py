@@ -16,7 +16,7 @@ border = sys.argv[4]
 ncgridfile = Dataset(grid_filename)
 
 # Create an empty destination file
-ncdstfile = Dataset(dst, "w", format="NETCDF4")
+ncdstfile = Dataset(dst, "w", format="NETCDF4_CLASSIC")
 
 # set attributes
 ncdstfile.setncatts(ncgridfile.__dict__)
@@ -34,7 +34,7 @@ for name, variable in ncgridfile.variables.items():
 ncgridborder = Dataset(grid_border, "r+")
 
 # create empty grid file
-ncborder = Dataset(border, "w", format="NETCDF4")
+ncborder = Dataset(border, "w", format="NETCDF4_CLASSIC")
 
 # set attributes
 ncborder.setncatts(ncgridborder.__dict__)
