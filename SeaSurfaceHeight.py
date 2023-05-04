@@ -94,6 +94,8 @@ if __name__ == '__main__':
 
     print("2d interpolation time:", tm.time() - start_x)
 
+    out2d[out2d == np.nan] = 1.e+37
+
     nc_destination = Dataset(destination_filename, "a")
     nc_destination.variables['zeta'][time, :, :] = out2d[:]
     nc_destination.close()

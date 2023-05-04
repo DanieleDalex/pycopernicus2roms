@@ -161,6 +161,7 @@ if __name__ == '__main__':
 
     s_rho = nc_grid.variables['s_rho'][:]
     s_rho = np.array(s_rho)
+    nc_grid.close()
 
     nc_mask = Dataset(mask_filename, "r+")
     mask = nc_mask.variables['mask_rho'][:]
@@ -275,7 +276,8 @@ if __name__ == '__main__':
 
     print("total time:", tm.time() - start)
 
-    nc_grid.close()
+    out_final_u[out_final_u == np.nan] = 1.e+37
+    out_final_v[out_final_v == np.nan] = 1.e+37
 
     nc_destination = Dataset(destination_filename, "a")
 
