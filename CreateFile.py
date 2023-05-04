@@ -189,7 +189,7 @@ ncdstfile.variables['theta_s'][:] = ncgridfile.variables['theta_s'][:]
 
 ncdstfile.variables['hc'][:] = ncgridfile.variables['hc'][:]
 
-ncdstfile.varialbes['Tcline'][:] = ncgridfile.variables['Tcline'][:]
+ncdstfile.variables['Tcline'][:] = ncgridfile.variables['Tcline'][:]
 
 ncdstfile.variables['tend'][:] = ncgridfile.variables['tend'][:]
 
