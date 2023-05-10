@@ -211,7 +211,9 @@ if __name__ == '__main__':
     nc = Dataset(src_filename, "r+")
     time_var = nc.variables['time']
     dtime = netCDF4.num2date(time_var[:], time_var.units)
-    nc_destination.variables['ocean_time'] = netCDF4.date2num(dtime, nc_destination.variables['ocean_time'].units)
+    desttime = netCDF4.date2num(dtime, nc_destination.variables['ocean_time'].units)
+    desttime = desttime.astype(int)
+    nc_destination.variables['ocean_time'][:] = desttime[:]
     nc.close()
     nc_destination.close()
 
@@ -221,7 +223,7 @@ if __name__ == '__main__':
     nc_border.variables['temp_east'][time, :, :] = out_final[0, :, -1]
     nc_border.variables['temp_north'][time, :, :] = out_final[0, -1, :]
 
-    nc_border.variables['ocean_time'] = netCDF4.date2num(dtime, nc_border.variables['ocean_time'].units)
+    nc_border.variables['ocean_time'][:] = desttime[:]
 
     nc_border.close()
 
