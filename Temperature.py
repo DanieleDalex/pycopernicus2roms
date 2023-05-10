@@ -211,8 +211,8 @@ if __name__ == '__main__':
     nc = Dataset(src_filename, "r+")
     time_var = nc.variables['time']
     dtime = netCDF4.num2date(time_var[:], time_var.units)
-    nc.close()
     nc_destination.variables['ocean_time'] = netCDF4.date2num(dtime, nc_destination.variables['ocean_time'].units)
+    nc.close()
     nc_destination.close()
 
     nc_border = Dataset(border_filename, "a")
