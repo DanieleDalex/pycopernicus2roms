@@ -16,7 +16,7 @@ border = sys.argv[4]
 ncgridfile = Dataset(grid_filename)
 
 # Create an empty destination file
-ncdstfile = Dataset(dst, "w", format="NETCDF4")
+ncdstfile = Dataset(dst, "w", format="NETCDF4_CLASSIC")
 
 # set attributes
 ncdstfile.setncatts(ncgridfile.__dict__)
@@ -34,7 +34,7 @@ for name, variable in ncgridfile.variables.items():
 ncgridborder = Dataset(grid_border, "r+")
 
 # create empty grid file
-ncborder = Dataset(border, "w", format="NETCDF4")
+ncborder = Dataset(border, "w", format="NETCDF4_CLASSIC")
 
 # set attributes
 ncborder.setncatts(ncgridborder.__dict__)
@@ -189,6 +189,12 @@ ncdstfile.variables['theta_s'][:] = ncgridfile.variables['theta_s'][:]
 
 ncdstfile.variables['hc'][:] = ncgridfile.variables['hc'][:]
 
+ncdstfile.variables['Tcline'][:] = ncgridfile.variables['Tcline'][:]
+
+ncdstfile.variables['tend'][:] = ncgridfile.variables['tend'][:]
+
+ncdstfile.variables['scrum_time'][:] = ncgridfile.variables['scrum_time'][:]
+
 ncdstfile.variables['Cs_r'][:] = ncgridfile.variables['Cs_r'][:]
 ncdstfile.variables['sc_r'][:] = ncgridfile.variables['sc_r'][:]
 ncdstfile.close()
@@ -212,6 +218,10 @@ ncborder.variables['theta_b'][:] = ncgridborder.variables['theta_b'][:]
 ncborder.variables['theta_s'][:] = ncgridborder.variables['theta_s'][:]
 
 ncborder.variables['hc'][:] = ncgridborder.variables['hc'][:]
+
+ncborder.variables['Tcline'][:] = ncgridborder.variables['Tcline'][:]
+
+ncborder.variables['z_r'][:] = ncgridborder.variables['z_r'][:]
 
 ncborder.variables['Cs_r'][:] = ncgridborder.variables['Cs_r'][:]
 ncborder.variables['sc_r'][:] = ncgridborder.variables['sc_r'][:]
