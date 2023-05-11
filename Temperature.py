@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
     data = [temp, latf, lonf, lat2, lon2, depth, h, mask, lat_dict, lon_dict]
     items = [(data, i) for i in np.arange(0, len(depth))]
-    with Pool(processes=6) as p:
+    with Pool(processes=20) as p:
         result = p.starmap(interpolation_lat_lon, items)
 
     print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
