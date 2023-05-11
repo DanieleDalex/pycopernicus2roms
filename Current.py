@@ -207,10 +207,10 @@ if __name__ == '__main__':
     h_v = np.reshape(h_v, (len(lat2_v[:, 0]), len(lon2_v[0, :])))
 
     # rotate u and v
-    start_r = tm.time()
-    for k in np.arange(0, len(depth)):
-        uo[k], vo[k] = rotate(uo[k], vo[k], angle, 1.e+20)
-    print("rotate time: ", tm.time() - start_r)
+    # start_r = tm.time()
+    # for k in np.arange(0, len(depth)):
+        # uo[k], vo[k] = rotate(uo[k], vo[k], angle, 1.e+20)
+    # print("rotate time: ", tm.time() - start_r)
 
     # interpolate current on u coordinate on longitude and latitude
 
