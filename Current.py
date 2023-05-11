@@ -80,7 +80,7 @@ def rotate(u, v, angle_rot, missing_value):
     # For each element in u...
     for i in np.arange(0, len(u)):
         # Check if all values are not NaN and not a missing value
-        if (u[i] != 'nan' and v[i] != 'nan' and angle_rot[i] != 'nan' and
+        if (~np.isnan(u[i]) and ~np.isnan(v[i]) and ~np.isnan(angle_rot[i]) and
                 u[i] != missing_value and v[i] != missing_value and angle_rot[i] != missing_value):
             # Rotate the values
             u[i] = (u[i] * np.cos(angle_rot[i]) + v[i] * np.sin(angle_rot[i]))
@@ -96,7 +96,7 @@ def calculate_bar(lat_local, lon_local, mask_local, s_rho_local, u_local):
             if mask_local[i_local][j_local] == 1:
                 count_local = 0
                 for k_local in np.arange(0, len(s_rho_local)):
-                    if u_local[k_local][i_local][j_local] != np.nan:
+                    if ~np.isnan(u_local[k_local][i_local][j_local]):
                         ubar_local[i_local][j_local] += u_local[k_local][i_local][j_local]
                         count_local += 1
                 if count_local > 1:
