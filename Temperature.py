@@ -57,6 +57,9 @@ def interpolate_sigma(arr):
             z_local = np.array(out4_local[:, i, j])
             z_local = z_local[~np.isnan(z_local)]
 
+            if len(z_local) == 0:
+                continue
+
             z_local = np.resize(z_local, len(z_local) + 1)
             z_local[len(z_local) - 1] = bottomT2_local[i, j]
             depth_act = depth_local[0:len(z_local)]
@@ -147,7 +150,7 @@ if __name__ == '__main__':
 
     data = [temp, latf, lonf, lat2, lon2, depth, h, mask, lat_dict, lon_dict]
     items = [(data, i) for i in np.arange(0, len(depth))]
-    with Pool(processes=20) as p:
+    with Pool(processes=6) as p:
         result = p.starmap(interpolation_lat_lon, items)
 
     print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
