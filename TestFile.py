@@ -1,9 +1,18 @@
+import sys
+
 import numpy as np
 from matplotlib import pyplot as plt
 from netCDF4 import Dataset
 from mpl_toolkits.basemap import Basemap
 
-nc_mine = Dataset("ini-d03.nc")
+if len(sys.argv) != 3:
+    print("Usage: python " + str(sys.argv[0]) + "mine_filename legacy_filename")
+    sys.exit(-1)
+
+mine_filename = sys.argv[1]
+legacy_filename = sys.argv[2]
+
+nc_mine = Dataset(mine_filename)
 lon = nc_mine.variables['lon_rho'][:]
 lon = np.array(lon)
 lat = nc_mine.variables['lat_rho'][:]
@@ -19,7 +28,7 @@ vbar_mine = nc_mine.variables['vbar'][:]
 vbar_mine = np.array(vbar_mine)
 nc_mine.close()
 
-nc_legacy = Dataset("ini-d03.nc.legacy")
+nc_legacy = Dataset(legacy_filename)
 u_legacy = nc_legacy.variables['u'][:]
 u_legacy = np.array(u_legacy)
 v_legacy = nc_legacy.variables['v'][:]
