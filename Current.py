@@ -7,6 +7,7 @@ import xarray as xr
 # from mpl_toolkits.basemap import Basemap
 from netCDF4 import Dataset
 from scipy.interpolate import griddata
+from scipy.interpolate import interp1d
 from multiprocessing import Pool
 
 
@@ -66,7 +67,8 @@ def interpolate_sigma(arr):
 
             depth2 = (s_rho_local * h_local[i, j]) * -1
 
-            out_final_local[:, i, j] = np.interp(depth2, depth_act, z_local)
+            f = interp1d(depth_act, z_local, fill_value="extrapolate")
+            out_final_local[:, i, j] = f(depth2)
 
     return out_final_local
 
@@ -101,6 +103,8 @@ def calculate_bar(lat_local, lon_local, mask_local, s_rho_local, u_local):
                         count_local += 1
                 if count_local > 1:
                     ubar_local[i_local][j_local] = ubar_local[i_local][j_local] / count_local
+                if count_local == 0:
+                    ubar_local[i_local][j_local] = np.nan
             else:
                 ubar_local[i_local][j_local] = np.nan
 
