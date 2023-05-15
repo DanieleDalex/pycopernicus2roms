@@ -65,6 +65,7 @@ def interpolate_sigma(arr):
 
             if len(z_local) == 1:
                 out_final_local[:, i, j] = z_local
+                continue
 
             depth_act = depth_local[0:len(z_local)]
 
