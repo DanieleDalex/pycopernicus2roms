@@ -60,12 +60,12 @@ def interpolate_sigma(arr):
             z_local = np.array(out4_local[:, i, j])
             z_local = z_local[~np.isnan(z_local)]
 
-            if len(z_local) == 0:
+            if len(z_local) < 2:
                 continue
 
             depth_act = depth_local[0:len(z_local)]
 
-            depth2 = (s_rho_local * h_local[i, j]) * -1
+            depth2 = np.abs(s_rho_local * h_local[i, j])
 
             f = interp1d(depth_act, z_local, fill_value="extrapolate")
             out_final_local[:, i, j] = f(depth2)
