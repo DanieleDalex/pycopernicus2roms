@@ -6,6 +6,7 @@ import xarray as xr
 # from mpl_toolkits.basemap import Basemap
 from netCDF4 import Dataset
 from scipy.interpolate import griddata
+from scipy.interpolate import interp1d
 from multiprocessing import Pool
 # from ray.util.multiprocessing import Pool
 
@@ -58,11 +59,15 @@ def interpolate_sigma(arr):
             if len(z_local) == 0:
                 continue
 
+            if len(z_local) == 1:
+                out_final_local[:, i, j] = z_local
+
             depth_act = depth_local[0:len(z_local)]
 
             depth2 = (s_rho_local * h_local[i, j]) * -1
 
-            out_final_local[:, i, j] = np.interp(depth2, depth_act, z_local)
+            f = interp1d(depth_act, z_local, fill_value="extrapolate")
+            out_final_local[:, i, j] = f(depth2)
 
     return out_final_local
 
