@@ -8,3 +8,4 @@ dagon~=0.10.1
 requests~=2.28.2
 setuptools~=65.5.1
 ray~=2.4.0
+Jug~=2.2.2

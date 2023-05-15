@@ -9,9 +9,10 @@ from netCDF4 import Dataset
 from scipy.interpolate import griddata
 from scipy.interpolate import interp1d
 from multiprocessing import Pool
-# from ray.util.multiprocessing import Pool
+from jug import TaskGenerator
 
 
+@TaskGenerator
 def interpolation_lat_lon(arr, i_local):
     temp_local, latf_local, lonf_local, lat2_local, lon2_local, depth_local, h_local, mask_local, \
         lat_dict_local, lon_dict_local = arr
@@ -151,9 +152,14 @@ if __name__ == '__main__':
     out2d[:] = np.nan
 
     data = [temp, latf, lonf, lat2, lon2, depth, h, mask, lat_dict, lon_dict]
-    items = [(data, i) for i in np.arange(0, len(depth))]
-    with Pool(processes=20) as p:
-        result = p.starmap(interpolation_lat_lon, items)
+    # items = [(data, i) for i in np.arange(0, len(depth))]
+    # with Pool(processes=20) as p:
+        # result = p.starmap(interpolation_lat_lon, items)
+
+    result = np.zeros((len(depth), len(lat2[:, 0]), len(lon2[0, :])))
+    result[:] = np.nan
+    for i in np.arange(0, len(depth)):
+        result[i, :, :] = interpolation_lat_lon(data, i)
 
     print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
 
