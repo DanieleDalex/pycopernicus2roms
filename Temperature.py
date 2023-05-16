@@ -201,14 +201,9 @@ if __name__ == '__main__':
 
     start_s = tm.time()
 
-    out_final = np.zeros((len(s_rho), len(lat2[:, 0]), len(lon2[0, :])))
-
     data = [lat2, lon2, out4, bottomT2, depth, h, s_rho]
 
-    result = ray.get([interpolate_sigma.remote(data, j) for j in np.arange(0, len(lon2[0, :]))])
-
-    for j in np.arange(0, len(lon2[0, :])):
-        out_final[:, :, j] = result[j]
+    out_final = interpolate_sigma(data)
 
     print("sigma interpolation time:", tm.time() - start_s)
     # 27 secondi
