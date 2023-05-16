@@ -160,7 +160,7 @@ if __name__ == '__main__':
     # result = p.starmap(interpolation_lat_lon, items)
 
     result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
-    print(result.shape)
+    print(result.count())
     print("2d interpolation time:", tm.time() - start_x)
 
     # 875 secondi
