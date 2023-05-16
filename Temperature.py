@@ -156,20 +156,23 @@ if __name__ == '__main__':
     # with Pool(processes=20) as p:
         # result = p.starmap(interpolation_lat_lon, items)
 
-    result = np.zeros((len(depth), len(lat2[:, 0]), len(lon2[0, :])))
-    result[:] = np.nan
     for i in np.arange(0, len(depth)):
-        result[i, :, :] = interpolation_lat_lon(data, i)
+        result = interpolation_lat_lon(data, i)
+        out2d[i, :, :] = result
+        if np.isnan(out2d[i]).size == 0 and i < last:
+            last = i
 
     print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
 
     # 875 secondi
 
+    '''
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
-        out2d[i, :, :] = result[i]
+        out2d[i, :, :] = result
         if np.isnan(out2d[i]).size == 0 and i < last:
             last = i
+    '''
 
     out4 = out2d[0:last, :, :]
 
