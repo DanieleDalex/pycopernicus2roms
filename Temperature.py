@@ -50,6 +50,7 @@ def interpolation_lat_lon(arr, i_local):
     return out3_local
 
 
+@ray.remote
 def interpolate_sigma(arr):
     lat2_local, lon2_local, out4_local, bottomT2_local, depth_local, h_local, s_rho_local = arr
 
@@ -156,11 +157,11 @@ if __name__ == '__main__':
     data = [temp, latf, lonf, lat2, lon2, depth, h, mask, lat_dict, lon_dict]
     # items = [(data, i) for i in np.arange(0, len(depth))]
     # with Pool(processes=20) as p:
-        # result = p.starmap(interpolation_lat_lon, items)
+    # result = p.starmap(interpolation_lat_lon, items)
 
     result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
-
-    print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
+    print(result.shape)
+    print("2d interpolation time:", tm.time() - start_x)
 
     # 875 secondi
 
@@ -201,9 +202,13 @@ if __name__ == '__main__':
 
     start_s = tm.time()
 
+    out_final = np.zeros((len(s_rho), len(lat2[:, 0]), len(lon2[0, :])))
+
     data = [lat2, lon2, out4, bottomT2, depth, h, s_rho]
 
-    out_final = interpolate_sigma(data)
+    result = ray.get([interpolate_sigma.remote(data, j) for j in np.arange(0, len(lon2[0, :]))])
+
+    # out_final[:, :, ] = interpolate_sigma(data)
 
     print("sigma interpolation time:", tm.time() - start_s)
     # 27 secondi
