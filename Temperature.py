@@ -11,7 +11,7 @@ from scipy.interpolate import interp1d
 from multiprocessing import Pool
 import ray
 
-ray.init(num_cpus=5, object_store_memory=20000000000)
+ray.init()
 
 
 @ray.remote
@@ -50,29 +50,29 @@ def interpolation_lat_lon(arr, i_local):
     return out3_local
 
 
-@ray.remote
-def interpolate_sigma(arr, j_local):
+def interpolate_sigma(arr):
     lat2_local, lon2_local, out4_local, bottomT2_local, depth_local, h_local, s_rho_local = arr
 
     out_final_local = np.zeros((len(s_rho_local), len(lat2_local[:, 0]), len(lon2_local[0, :])))
     out_final_local[:] = np.nan
 
     for i in np.arange(0, len(lat2_local[:, 0])):
-        z_local = np.array(out4_local[:, i, j_local])
-        z_local = z_local[~np.isnan(z_local)]
+        for j_local in np.arange(0, len(lon2_local[0, :])):
+            z_local = np.array(out4_local[:, i, j_local])
+            z_local = z_local[~np.isnan(z_local)]
 
-        if len(z_local) == 0:
-            continue
+            if len(z_local) == 0:
+                continue
 
-        z_local = np.resize(z_local, len(z_local) + 1)
-        z_local[len(z_local) - 1] = bottomT2_local[i, j_local]
-        depth_act = depth_local[0:len(z_local)]
-        depth_act[len(z_local) - 1] = h_local[i, j_local]
+            z_local = np.resize(z_local, len(z_local) + 1)
+            z_local[len(z_local) - 1] = bottomT2_local[i, j_local]
+            depth_act = depth_local[0:len(z_local)]
+            depth_act[len(z_local) - 1] = h_local[i, j_local]
 
-        depth2 = np.abs(s_rho_local * h_local[i, j_local])
+            depth2 = np.abs(s_rho_local * h_local[i, j_local])
 
-        f = np.interp(depth2, depth_act, z_local)
-        out_final_local[:, i, j_local] = f(depth2)
+            f = np.interp(depth2, depth_act, z_local)
+            out_final_local[:, i, j_local] = f(depth2)
 
     return out_final_local
 
