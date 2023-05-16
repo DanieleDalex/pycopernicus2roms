@@ -11,7 +11,7 @@ from scipy.interpolate import interp1d
 from multiprocessing import Pool
 import ray
 
-ray.init()
+ray.init(num_cpus=5, object_store_memory=20000000000)
 
 
 @ray.remote
@@ -71,7 +71,7 @@ def interpolate_sigma(arr, j_local):
 
         depth2 = np.abs(s_rho_local * h_local[i, j_local])
 
-        f = interp1d(depth_act, z_local, fill_value="extrapolate")
+        f = np.interp(depth2, depth_act, z_local)
         out_final_local[:, i, j_local] = f(depth2)
 
     return out_final_local
