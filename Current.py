@@ -50,30 +50,30 @@ def interpolation_lat_lon(arr, i_local):
     return out3_local
 
 
-def interpolate_sigma(arr):
+@ray.remote
+def interpolate_sigma(arr, j_local):
     lat2_local, lon2_local, out4_local, depth_local, h_local, s_rho_local = arr
 
     out_final_local = np.zeros((len(s_rho_local), len(lat2_local[:, 0]), len(lon2_local[0, :])))
     out_final_local[:] = np.nan
 
     for i in np.arange(0, len(lat2_local[:, 0])):
-        for j in np.arange(0, len(lon2_local[0, :])):
-            z_local = np.array(out4_local[:, i, j])
-            z_local = z_local[~np.isnan(z_local)]
+        z_local = np.array(out4_local[:, i, j_local])
+        z_local = z_local[~np.isnan(z_local)]
 
-            if len(z_local) == 0:
-                continue
+        if len(z_local) == 0:
+            continue
 
-            if len(z_local) == 1:
-                out_final_local[:, i, j] = z_local
-                continue
+        if len(z_local) == 1:
+            out_final_local[:, i, j_local] = z_local
+            continue
 
-            depth_act = depth_local[0:len(z_local)]
+        depth_act = depth_local[0:len(z_local)]
 
-            depth2 = np.abs(s_rho_local * h_local[i, j])
+        depth2 = np.abs(s_rho_local * h_local[i, j_local])
 
-            f = interp1d(depth_act, z_local, fill_value="extrapolate")
-            out_final_local[:, i, j] = f(depth2)
+        f = interp1d(depth_act, z_local, fill_value="extrapolate")
+        out_final_local[:, i, j_local] = f(depth2)
 
     return out_final_local
 
@@ -95,23 +95,23 @@ def rotate(u, v, angle_rot, missing_value):
     return np.reshape(u, (m, n)), np.reshape(v, (m, n))
 
 
-def calculate_bar(lat_local, lon_local, mask_local, s_rho_local, u_local):
+@ray.remote
+def calculate_bar(lat_local, lon_local, mask_local, s_rho_local, u_local, j_local):
     ubar_local = np.zeros((len(lat_local[:, 0]), len(lon_local[0, :])))
 
     for i_local in np.arange(0, len(lat_local[:, 0])):
-        for j_local in np.arange(0, len(lon_local[0, :])):
-            if mask_local[i_local][j_local] == 1:
-                count_local = 0
-                for k_local in np.arange(0, len(s_rho_local)):
-                    if ~np.isnan(u_local[k_local][i_local][j_local]):
-                        ubar_local[i_local][j_local] += u_local[k_local][i_local][j_local]
-                        count_local += 1
-                if count_local > 1:
-                    ubar_local[i_local][j_local] = ubar_local[i_local][j_local] / count_local
-                if count_local == 0:
-                    ubar_local[i_local][j_local] = np.nan
-            else:
+        if mask_local[i_local][j_local] == 1:
+            count_local = 0
+            for k_local in np.arange(0, len(s_rho_local)):
+                if ~np.isnan(u_local[k_local][i_local][j_local]):
+                    ubar_local[i_local][j_local] += u_local[k_local][i_local][j_local]
+                    count_local += 1
+            if count_local > 1:
+                ubar_local[i_local][j_local] = ubar_local[i_local][j_local] / count_local
+            if count_local == 0:
                 ubar_local[i_local][j_local] = np.nan
+        else:
+            ubar_local[i_local][j_local] = np.nan
 
     return ubar_local
 
@@ -218,7 +218,7 @@ if __name__ == '__main__':
     # rotate u and v
     # start_r = tm.time()
     # for k in np.arange(0, len(depth)):
-        # uo[k], vo[k] = rotate(uo[k], vo[k], angle, 1.e+20)
+    # uo[k], vo[k] = rotate(uo[k], vo[k], angle, 1.e+20)
     # print("rotate time: ", tm.time() - start_r)
 
     # interpolate current on u coordinate on longitude and latitude
@@ -231,7 +231,7 @@ if __name__ == '__main__':
     data = [uo, latf, lonf, lat2_u, lon2_u, depth, h_u, mask_u, lat_dict_u, lon_dict_u]
     # items = [(data, i) for i in np.arange(0, len(depth))]
     # with Pool(processes=20) as p:
-        # result = p.starmap(interpolation_lat_lon, items)
+    # result = p.starmap(interpolation_lat_lon, items)
 
     result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
 
@@ -251,7 +251,7 @@ if __name__ == '__main__':
     data = [vo, latf, lonf, lat2_v, lon2_v, depth, h_v, mask_v, lat_dict_v, lon_dict_v]
     # items = [(data, i) for i in np.arange(0, len(depth))]
     # with Pool(processes=20) as p:
-        # result = p.starmap(interpolation_lat_lon, items)
+    # result = p.starmap(interpolation_lat_lon, items)
 
     result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
 
@@ -271,19 +271,44 @@ if __name__ == '__main__':
 
     data = [lat2_u, lon2_u, out4_u, depth, h_u, s_rho]
 
-    out_final_u = interpolate_sigma(data)
+    out_final_u = np.zeros((len(s_rho), len(lat2_u[:, 0]), len(lon2_u[0, :])))
+    out_final_u[:] = np.nan
+
+    result = ray.get([interpolate_sigma.remote(data, j) for j in np.arange(0, len(lon2_u[0, :]))])
+
+    for j in np.arange(0, len(lon2_u[0, :])):
+        out_final_u[:, :, j] = result[j]
 
     data = [lat2_v, lon2_v, out4_v, depth, h_v, s_rho]
 
-    out_final_v = interpolate_sigma(data)
+    out_final_v = np.zeros((len(s_rho), len(lat2_v[:, 0]), len(lon2_v[0, :])))
+    out_final_v[:] = np.nan
+
+    result = ray.get([interpolate_sigma.remote(data, j) for j in np.arange(0, len(lon2_v[0, :]))])
+
+    for j in np.arange(0, len(lon2_v[0, :])):
+        out_final_v[:, :, j] = result[j]
 
     print("sigma interpolation time:", tm.time() - start_s)
 
     start_b = tm.time()
 
-    ubar = calculate_bar(lat2_u, lon2_u, mask_u, s_rho, out_final_u)
+    ubar = np.zeros((len(lat2_u[:, 0]), len(lon2_u[0, :])))
+    ubar[:] = np.nan
+    # np.arange(0, len(lon_local[0, :])
 
-    vbar = calculate_bar(lat2_v, lon2_v, mask_v, s_rho, out_final_v)
+    result = ray.get([calculate_bar.remote(lat2_u, lon2_u, mask_u, s_rho, out_final_u, j) for j in np.arange(0, len(lon2_u[0, :]))])
+
+    for j in np.arange(0, len(lon2_u[0, :])):
+        ubar[:, j] = result[j]
+
+    vbar = np.zeros((len(lat2_v[:, 0]), len(lon2_v[0, :])))
+    vbar[:] = np.nan
+
+    result = ray.get([calculate_bar.remote(lat2_v, lon2_v, mask_v, s_rho, out_final_v, j) for j in np.arange(0, len(lon2_v[0, :]))])
+
+    for j in np.arange(0, len(lon2_v[0, :])):
+        vbar[:, j] = result[j]
 
     print("calculate bar time:", tm.time() - start_b)
 

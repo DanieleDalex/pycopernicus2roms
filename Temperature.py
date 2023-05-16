@@ -51,29 +51,28 @@ def interpolation_lat_lon(arr, i_local):
 
 
 @ray.remote
-def interpolate_sigma(arr):
+def interpolate_sigma(arr, j_local):
     lat2_local, lon2_local, out4_local, bottomT2_local, depth_local, h_local, s_rho_local = arr
 
     out_final_local = np.zeros((len(s_rho_local), len(lat2_local[:, 0]), len(lon2_local[0, :])))
     out_final_local[:] = np.nan
 
     for i in np.arange(0, len(lat2_local[:, 0])):
-        for j in np.arange(0, len(lon2_local[0, :])):
-            z_local = np.array(out4_local[:, i, j])
-            z_local = z_local[~np.isnan(z_local)]
+        z_local = np.array(out4_local[:, i, j_local])
+        z_local = z_local[~np.isnan(z_local)]
 
-            if len(z_local) == 0:
-                continue
+        if len(z_local) == 0:
+            continue
 
-            z_local = np.resize(z_local, len(z_local) + 1)
-            z_local[len(z_local) - 1] = bottomT2_local[i, j]
-            depth_act = depth_local[0:len(z_local)]
-            depth_act[len(z_local) - 1] = h_local[i, j]
+        z_local = np.resize(z_local, len(z_local) + 1)
+        z_local[len(z_local) - 1] = bottomT2_local[i, j_local]
+        depth_act = depth_local[0:len(z_local)]
+        depth_act[len(z_local) - 1] = h_local[i, j_local]
 
-            depth2 = np.abs(s_rho_local * h_local[i, j])
+        depth2 = np.abs(s_rho_local * h_local[i, j_local])
 
-            f = interp1d(depth_act, z_local, fill_value="extrapolate")
-            out_final_local[:, i, j] = f(depth2)
+        f = interp1d(depth_act, z_local, fill_value="extrapolate")
+        out_final_local[:, i, j_local] = f(depth2)
 
     return out_final_local
 
@@ -160,14 +159,14 @@ if __name__ == '__main__':
     # result = p.starmap(interpolation_lat_lon, items)
 
     result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
-    print(result)
+
     print("2d interpolation time:", tm.time() - start_x)
 
     # 875 secondi
 
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
-        out2d[i, :, :] = result
+        out2d[i, :, :] = result[i]
         if np.isnan(out2d[i]).size == 0 and i < last:
             last = i
 
@@ -208,7 +207,8 @@ if __name__ == '__main__':
 
     result = ray.get([interpolate_sigma.remote(data, j) for j in np.arange(0, len(lon2[0, :]))])
 
-    # out_final[:, :, ] = interpolate_sigma(data)
+    for j in np.arange(0, len(lon2[0, :])):
+        out_final[:, :, j] = result[j]
 
     print("sigma interpolation time:", tm.time() - start_s)
     # 27 secondi
