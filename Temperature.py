@@ -9,10 +9,12 @@ from netCDF4 import Dataset
 from scipy.interpolate import griddata
 from scipy.interpolate import interp1d
 from multiprocessing import Pool
-from jug import TaskGenerator
+import ray
+
+ray.init()
 
 
-@TaskGenerator
+@ray.remote
 def interpolation_lat_lon(arr, i_local):
     temp_local, latf_local, lonf_local, lat2_local, lon2_local, depth_local, h_local, mask_local, \
         lat_dict_local, lon_dict_local = arr
@@ -156,23 +158,17 @@ if __name__ == '__main__':
     # with Pool(processes=20) as p:
         # result = p.starmap(interpolation_lat_lon, items)
 
-    for i in np.arange(0, len(depth)):
-        result = interpolation_lat_lon(data, i)
-        out2d[i, :, :] = result
-        if np.isnan(out2d[i]).size == 0 and i < last:
-            last = i
+    result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
 
     print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
 
     # 875 secondi
 
-    '''
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
         out2d[i, :, :] = result
         if np.isnan(out2d[i]).size == 0 and i < last:
             last = i
-    '''
 
     out4 = out2d[0:last, :, :]
 
@@ -259,7 +255,6 @@ if __name__ == '__main__':
 
     plt.show()
 '''
-
 
 """
 2d interpolation time: 869.9637989997864 with  1  processes

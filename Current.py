@@ -9,10 +9,12 @@ from netCDF4 import Dataset
 from scipy.interpolate import griddata
 from scipy.interpolate import interp1d
 from multiprocessing import Pool
-from jug import TaskGenerator
+import ray
+
+ray.init()
 
 
-@TaskGenerator
+@ray.remote
 def interpolation_lat_lon(arr, i_local):
     temp_local, latf_local, lonf_local, lat2_local, lon2_local, depth_local, h_local, mask_local, \
         lat_dict_local, lon_dict_local = arr
@@ -231,10 +233,7 @@ if __name__ == '__main__':
     # with Pool(processes=20) as p:
         # result = p.starmap(interpolation_lat_lon, items)
 
-    result = np.zeros((len(depth), len(lat2_u[:, 0]), len(lon2_u[0, :])))
-    result[:] = np.nan
-    for i in np.arange(0, len(depth)):
-        result[i, :, :] = interpolation_lat_lon(data, i)
+    result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
 
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
@@ -254,10 +253,7 @@ if __name__ == '__main__':
     # with Pool(processes=20) as p:
         # result = p.starmap(interpolation_lat_lon, items)
 
-    result = np.zeros((len(depth), len(lat2_v[:, 0]), len(lon2_v[0, :])))
-    result[:] = np.nan
-    for i in np.arange(0, len(depth)):
-        result[i, :, :] = interpolation_lat_lon(data, i)
+    result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
 
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
