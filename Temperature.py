@@ -159,10 +159,6 @@ if __name__ == '__main__':
 
     result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
 
-    print("2d interpolation time:", tm.time() - start_x)
-
-    # 875 secondi
-
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
         out2d[i, :, :] = result[i]
@@ -170,6 +166,12 @@ if __name__ == '__main__':
             last = i
 
     out4 = out2d[0:last, :, :]
+
+    print("2d interpolation time:", tm.time() - start_x)
+
+    ray.shutdown()
+
+    # 875 secondi
 
     # interpolate temperature at sea floor
     start_b = tm.time()

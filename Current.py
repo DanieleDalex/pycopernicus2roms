@@ -263,7 +263,9 @@ if __name__ == '__main__':
 
     out4_v = out2d_v[0:last_v, :, :]
 
-    print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
+    print("2d interpolation time:", tm.time() - start_x)
+
+    ray.shutdown()
 
     # interpolate current on sigma
 

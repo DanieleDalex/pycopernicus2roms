@@ -84,7 +84,7 @@ salt_legacy[salt_legacy == 1.e+37] = np.nan
 zeta_legacy[zeta_legacy == 1.e+37] = np.nan
 '''
 
-temp_diff = temp_mine[:] - temp_legacy[:]
+temp_diff = np. abs(np.abs(temp_mine[:]) - np.abs(temp_legacy[:]))
 
 # u_diff = u_mine[:] - u_legacy[:]
 # v_diff = v_mine[:] - v_legacy[:]
@@ -100,7 +100,7 @@ map.drawparallels(parallels, labels=[1, 0, 0, 0], fontsize=10)
 map.drawmeridians(meridians, labels=[0, 0, 0, 1], fontsize=10)
 
 x, y = map(lon, lat)
-curr = map.contourf(x, y, temp_diff[0, 10, :, :])
+curr = map.contourf(x, y, temp_diff[0, 0, :, :])
 cb = map.colorbar(curr, "right")
 # quiver = map.quiver(x[::20, ::20], y[::20, ::20], u_diff[0, 0, ::20, ::20], v_diff[0, 0, ::20, ::20])
 
