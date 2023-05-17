@@ -95,23 +95,23 @@ def rotate(u, v, angle_rot, missing_value):
     return np.reshape(u, (m, n)), np.reshape(v, (m, n))
 
 
-@ray.remote
-def calculate_bar(lat_local, lon_local, mask_local, s_rho_local, u_local, j_local):
+def calculate_bar(lat_local, lon_local, mask_local, s_rho_local, u_local):
     ubar_local = np.zeros((len(lat_local[:, 0]), len(lon_local[0, :])))
 
     for i_local in np.arange(0, len(lat_local[:, 0])):
-        if mask_local[i_local][j_local] == 1:
-            count_local = 0
-            for k_local in np.arange(0, len(s_rho_local)):
-                if ~np.isnan(u_local[k_local][i_local][j_local]):
-                    ubar_local[i_local][j_local] += u_local[k_local][i_local][j_local]
-                    count_local += 1
-            if count_local > 1:
-                ubar_local[i_local][j_local] = ubar_local[i_local][j_local] / count_local
-            if count_local == 0:
+        for j_local in np.arange(0, len(lon_local[0, :])):
+            if mask_local[i_local][j_local] == 1:
+                count_local = 0
+                for k_local in np.arange(0, len(s_rho_local)):
+                    if ~np.isnan(u_local[k_local][i_local][j_local]):
+                        ubar_local[i_local][j_local] += u_local[k_local][i_local][j_local]
+                        count_local += 1
+                if count_local > 1:
+                    ubar_local[i_local][j_local] = ubar_local[i_local][j_local] / count_local
+                if count_local == 0:
+                    ubar_local[i_local][j_local] = np.nan
+            else:
                 ubar_local[i_local][j_local] = np.nan
-        else:
-            ubar_local[i_local][j_local] = np.nan
 
     return ubar_local
 
@@ -281,22 +281,11 @@ if __name__ == '__main__':
 
     start_b = tm.time()
 
-    ubar = np.zeros((len(lat2_u[:, 0]), len(lon2_u[0, :])))
-    ubar[:] = np.nan
     # np.arange(0, len(lon_local[0, :])
 
-    result = ray.get([calculate_bar.remote(lat2_u, lon2_u, mask_u, s_rho, out_final_u, j) for j in np.arange(0, len(lon2_u[0, :]))])
+    ubar = calculate_bar(lat2_u, lon2_u, mask_u, s_rho, out_final_u)
 
-    for j in np.arange(0, len(lon2_u[0, :])):
-        ubar[:, j] = result[j]
-
-    vbar = np.zeros((len(lat2_v[:, 0]), len(lon2_v[0, :])))
-    vbar[:] = np.nan
-
-    result = ray.get([calculate_bar.remote(lat2_v, lon2_v, mask_v, s_rho, out_final_v, j) for j in np.arange(0, len(lon2_v[0, :]))])
-
-    for j in np.arange(0, len(lon2_v[0, :])):
-        vbar[:, j] = result[j]
+    vbar = calculate_bar(lat2_v, lon2_v, mask_v, s_rho, out_final_v)
 
     print("calculate bar time:", tm.time() - start_b)
 
