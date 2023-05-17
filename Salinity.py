@@ -49,30 +49,29 @@ def interpolation_lat_lon(arr, i_local):
     return out3_local
 
 
-@ray.remote
-def interpolate_sigma(arr, j_local):
+def interpolate_sigma(arr):
     lat2_local, lon2_local, out4_local, depth_local, h_local, s_rho_local = arr
 
     out_final_local = np.zeros((len(s_rho_local), len(lat2_local[:, 0]), len(lon2_local[0, :])))
     out_final_local[:] = np.nan
 
     for i in np.arange(0, len(lat2_local[:, 0])):
-        z_local = np.array(out4_local[:, i, j_local])
-        z_local = z_local[~np.isnan(z_local)]
+        for j_local in np.arange(0, len(lon2_local[0, :])):
+            z_local = np.array(out4_local[:, i, j_local])
+            z_local = z_local[~np.isnan(z_local)]
 
-        if len(z_local) == 0:
-            continue
+            if len(z_local) == 0:
+                continue
 
-        if len(z_local) == 1:
-            out_final_local[:, i, j_local] = z_local
-            continue
+            if len(z_local) == 1:
+                out_final_local[:, i, j_local] = z_local
+                continue
 
-        depth_act = depth_local[0:len(z_local)]
+            depth_act = depth_local[0:len(z_local)]
 
-        depth2 = (s_rho_local * h_local[i, j_local]) * -1
+            depth2 = (s_rho_local * h_local[i, j_local]) * -1
 
-        f = interp1d(depth_act, z_local, fill_value="extrapolate")
-        out_final_local[:, i, j_local] = f(depth2)
+            out_final_local[:, i, j_local] = np.interp(depth2, depth_act, z_local)
 
     return out_final_local
 
@@ -162,14 +161,9 @@ if __name__ == '__main__':
 
     start_s = tm.time()
 
-    out_final = np.zeros((len(s_rho), len(lat2[:, 0]), len(lon2[0, :])))
-
     data = [lat2, lon2, out4, depth, h, s_rho]
 
-    result = ray.get([interpolate_sigma.remote(data, j) for j in np.arange(0, len(lon2[0, :]))])
-
-    for j in np.arange(0, len(lon2[0, :])):
-        out_final[:, :, j] = result[j]
+    out_final = interpolate_sigma(data)
 
     print("sigma interpolation time:", tm.time() - start_s)
 

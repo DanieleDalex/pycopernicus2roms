@@ -50,30 +50,30 @@ def interpolation_lat_lon(arr, i_local):
     return out3_local
 
 
-@ray.remote
-def interpolate_sigma(arr, j_local):
+def interpolate_sigma(arr):
     lat2_local, lon2_local, out4_local, depth_local, h_local, s_rho_local = arr
 
     out_final_local = np.zeros((len(s_rho_local), len(lat2_local[:, 0]), len(lon2_local[0, :])))
     out_final_local[:] = np.nan
 
     for i in np.arange(0, len(lat2_local[:, 0])):
-        z_local = np.array(out4_local[:, i, j_local])
-        z_local = z_local[~np.isnan(z_local)]
+        for j_local in np.arange(0, len(lon2_local[0, :])):
+            z_local = np.array(out4_local[:, i, j_local])
+            z_local = z_local[~np.isnan(z_local)]
 
-        if len(z_local) == 0:
-            continue
+            if len(z_local) == 0:
+                continue
 
-        if len(z_local) == 1:
-            out_final_local[:, i, j_local] = z_local
-            continue
+            if len(z_local) == 1:
+                out_final_local[:, i, j_local] = z_local
+                continue
 
-        depth_act = depth_local[0:len(z_local)]
+            depth_act = depth_local[0:len(z_local)]
 
-        depth2 = np.abs(s_rho_local * h_local[i, j_local])
+            depth2 = np.abs(s_rho_local * h_local[i, j_local])
 
-        f = interp1d(depth_act, z_local, fill_value="extrapolate")
-        out_final_local[:, i, j_local] = f(depth2)
+            f = interp1d(depth_act, z_local, kind="slinear", fill_value="extrapolate")
+            out_final_local[:, i, j_local] = f(depth2)
 
     return out_final_local
 
@@ -271,23 +271,11 @@ if __name__ == '__main__':
 
     data = [lat2_u, lon2_u, out4_u, depth, h_u, s_rho]
 
-    out_final_u = np.zeros((len(s_rho), len(lat2_u[:, 0]), len(lon2_u[0, :])))
-    out_final_u[:] = np.nan
-
-    result = ray.get([interpolate_sigma.remote(data, j) for j in np.arange(0, len(lon2_u[0, :]))])
-
-    for j in np.arange(0, len(lon2_u[0, :])):
-        out_final_u[:, :, j] = result[j]
+    out_final_u = interpolate_sigma(data)
 
     data = [lat2_v, lon2_v, out4_v, depth, h_v, s_rho]
 
-    out_final_v = np.zeros((len(s_rho), len(lat2_v[:, 0]), len(lon2_v[0, :])))
-    out_final_v[:] = np.nan
-
-    result = ray.get([interpolate_sigma.remote(data, j) for j in np.arange(0, len(lon2_v[0, :]))])
-
-    for j in np.arange(0, len(lon2_v[0, :])):
-        out_final_v[:, :, j] = result[j]
+    out_final_v = interpolate_sigma(data)
 
     print("sigma interpolation time:", tm.time() - start_s)
 
