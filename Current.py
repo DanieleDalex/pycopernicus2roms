@@ -9,12 +9,12 @@ from netCDF4 import Dataset
 from scipy.interpolate import griddata
 from scipy.interpolate import interp1d
 from multiprocessing import Pool
-import ray
+# import ray
 
-ray.init()
+# ray.init()
 
 
-@ray.remote
+# @ray.remote
 def interpolation_lat_lon(arr, i_local):
     temp_local, latf_local, lonf_local, lat2_local, lon2_local, depth_local, h_local, mask_local, \
         lat_dict_local, lon_dict_local = arr
@@ -229,11 +229,11 @@ if __name__ == '__main__':
     out2d_u[:] = np.nan
 
     data = [uo, latf, lonf, lat2_u, lon2_u, depth, h_u, mask_u, lat_dict_u, lon_dict_u]
-    # items = [(data, i) for i in np.arange(0, len(depth))]
-    # with Pool(processes=20) as p:
-    # result = p.starmap(interpolation_lat_lon, items)
+    items = [(data, i) for i in np.arange(0, len(depth))]
+    with Pool(processes=20) as p:
+        result = p.starmap(interpolation_lat_lon, items)
 
-    result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
+    # result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
 
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
@@ -249,11 +249,11 @@ if __name__ == '__main__':
     out2d_v[:] = np.nan
 
     data = [vo, latf, lonf, lat2_v, lon2_v, depth, h_v, mask_v, lat_dict_v, lon_dict_v]
-    # items = [(data, i) for i in np.arange(0, len(depth))]
-    # with Pool(processes=20) as p:
-    # result = p.starmap(interpolation_lat_lon, items)
+    items = [(data, i) for i in np.arange(0, len(depth))]
+    with Pool(processes=20) as p:
+        result = p.starmap(interpolation_lat_lon, items)
 
-    result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
+    # result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
 
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
@@ -265,7 +265,7 @@ if __name__ == '__main__':
 
     print("2d interpolation time:", tm.time() - start_x)
 
-    ray.shutdown()
+    # ray.shutdown()
 
     # interpolate current on sigma
 
