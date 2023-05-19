@@ -42,7 +42,18 @@ def interpolation_lat_lon(arr, i_local):
         out3_local[lat_dict_local[lat_cons_local[k_local]], lon_dict_local[lon_cons_local[k_local]]] = out2_local[
             k_local]
 
-    return out3_local
+    out4_local = griddata((lat2_local[~np.isnan(out3_local)], lon2_local[~np.isnan(out3_local)]),
+                          out3_local[~np.isnan(out3_local)], (lat_cons_local, lon_cons_local), method='nearest')
+    out4_local = np.array(out4_local)
+
+    out5_local = np.zeros((len(lat2_local[:, 0]), len(lon2_local[0, :])))
+    out5_local[:] = np.nan
+
+    for k_local in np.arange(0, len(lon_cons_local)):
+        out5_local[lat_dict_local[lat_cons_local[k_local]], lon_dict_local[lon_cons_local[k_local]]] = out4_local[
+            k_local]
+
+    return out5_local
 
 
 def interpolate_sigma(arr):
@@ -72,12 +83,6 @@ def interpolate_sigma(arr):
     return out_final_local
 
 
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
-
-
-
 if len(sys.argv) != 6:
     print("Usage: python " + str(sys.argv[0]) + "source_filename mask_filename destination_filename "
                                                 "border_filename time")
@@ -88,6 +93,10 @@ mask_filename = sys.argv[2]
 destination_filename = sys.argv[3]
 border_filename = sys.argv[4]
 time = int(sys.argv[5])
+
+comm = MPI.COMM_WORLD
+size = comm.Get_size()
+rank = comm.Get_rank()
 
 # source values
 nc = xr.open_dataset(src_filename)

@@ -2,19 +2,14 @@ import sys
 import time as tm
 # import matplotlib.pyplot as plt
 import numpy as np
-import ray
 import xarray as xr
 # from mpl_toolkits.basemap import Basemap
 from netCDF4 import Dataset
 from scipy.interpolate import griddata
 from scipy.interpolate import interp1d
-from multiprocessing import Pool
-# import ray
-
-# ray.init()
+from mpi4py import MPI
 
 
-# @ray.remote
 def interpolation_lat_lon(arr, i_local):
     temp_local, latf_local, lonf_local, lat2_local, lon2_local, depth_local, h_local, mask_local, \
         lat_dict_local, lon_dict_local = arr
@@ -127,128 +122,139 @@ def calculate_bar(lat_local, lon_local, mask_local, s_rho_local, u_local):
     return ubar_local
 
 
-if __name__ == '__main__':
+if len(sys.argv) != 6:
+    print("Usage: python " + str(sys.argv[0]) + "source_filename mask_filename destination_filename "
+                                                "border_filename time")
+    sys.exit(-1)
 
-    if len(sys.argv) != 6:
-        print("Usage: python " + str(sys.argv[0]) + "source_filename mask_filename destination_filename "
-                                                    "border_filename time")
-        sys.exit(-1)
+src_filename = sys.argv[1]
+mask_filename = sys.argv[2]
+destination_filename = sys.argv[3]
+border_filename = sys.argv[4]
+time = int(sys.argv[5])
 
-    src_filename = sys.argv[1]
-    mask_filename = sys.argv[2]
-    destination_filename = sys.argv[3]
-    border_filename = sys.argv[4]
-    time = int(sys.argv[5])
+comm = MPI.COMM_WORLD
+size = comm.Get_size()
+rank = comm.Get_rank()
 
-    # source values
-    nc = xr.open_dataset(src_filename)
-    uo = nc.variables['uo'][:]
-    uo = np.array(uo[time, :, :, :])
-    vo = nc.variables['vo'][:]
-    vo = np.array(vo[time, :, :, :])
+# source values
+nc = xr.open_dataset(src_filename)
+uo = nc.variables['uo'][:]
+uo = np.array(uo[time, :, :, :])
+vo = nc.variables['vo'][:]
+vo = np.array(vo[time, :, :, :])
 
-    lon = nc.variables['lon'][:]
-    lat = nc.variables['lat'][:]
-    depth = nc.variables['depth'][:]
-    depth = np.array(depth)
+lon = nc.variables['lon'][:]
+lat = nc.variables['lat'][:]
+depth = nc.variables['depth'][:]
+depth = np.array(depth)
 
-    nc_frame = nc.to_dataframe()
-    nc_frame = nc_frame.reset_index()
-    nc_frame = nc_frame.loc[nc_frame['time'] == nc_frame['time'][0]]
-    nc_framel = nc_frame.loc[nc_frame['depth'] == nc_frame['depth'][0]]
-    lonf = nc_framel['lon']
-    latf = nc_framel['lat']
-    lonf = np.array(lonf)
-    latf = np.array(latf)
+nc_frame = nc.to_dataframe()
+nc_frame = nc_frame.reset_index()
+nc_frame = nc_frame.loc[nc_frame['time'] == nc_frame['time'][0]]
+nc_framel = nc_frame.loc[nc_frame['depth'] == nc_frame['depth'][0]]
+lonf = nc_framel['lon']
+latf = nc_framel['lat']
+lonf = np.array(lonf)
+latf = np.array(latf)
 
-    # destination grid
-    nc_grid = Dataset(destination_filename, "r+", format="NETCDF4_CLASSIC")
-    lon2 = nc_grid.variables['lon_rho'][:]
-    lat2 = nc_grid.variables['lat_rho'][:]
-    lon2 = np.array(lon2)
-    lat2 = np.array(lat2)
-    lon2_u = nc_grid.variables['lon_u'][:]
-    lat2_u = nc_grid.variables['lat_u'][:]
-    lon2_u = np.array(lon2_u)
-    lat2_u = np.array(lat2_u)
-    lon2_v = nc_grid.variables['lon_v'][:]
-    lat2_v = nc_grid.variables['lat_v'][:]
-    lon2_v = np.array(lon2_v)
-    lat2_v = np.array(lat2_v)
+# destination grid
+nc_grid = Dataset(destination_filename, "r+", format="NETCDF4_CLASSIC")
+lon2 = nc_grid.variables['lon_rho'][:]
+lat2 = nc_grid.variables['lat_rho'][:]
+lon2 = np.array(lon2)
+lat2 = np.array(lat2)
+lon2_u = nc_grid.variables['lon_u'][:]
+lat2_u = nc_grid.variables['lat_u'][:]
+lon2_u = np.array(lon2_u)
+lat2_u = np.array(lat2_u)
+lon2_v = nc_grid.variables['lon_v'][:]
+lat2_v = nc_grid.variables['lat_v'][:]
+lon2_v = np.array(lon2_v)
+lat2_v = np.array(lat2_v)
 
-    h = nc_grid.variables['h'][:]
-    h = np.array(h)
+h = nc_grid.variables['h'][:]
+h = np.array(h)
 
-    s_rho = nc_grid.variables['s_rho'][:]
-    s_rho = np.array(s_rho)
-    nc_grid.close()
+s_rho = nc_grid.variables['s_rho'][:]
+s_rho = np.array(s_rho)
+nc_grid.close()
 
-    nc_mask = Dataset(mask_filename, "r+")
-    mask = nc_mask.variables['mask_rho'][:]
-    mask_u = nc_mask.variables['mask_u'][:]
-    mask_v = nc_mask.variables['mask_v'][:]
-    mask = np.array(mask)
-    mask_u = np.array(mask_u)
-    mask_v = np.array(mask_v)
+nc_mask = Dataset(mask_filename, "r+")
+mask = nc_mask.variables['mask_rho'][:]
+mask_u = nc_mask.variables['mask_u'][:]
+mask_v = nc_mask.variables['mask_v'][:]
+mask = np.array(mask)
+mask_u = np.array(mask_u)
+mask_v = np.array(mask_v)
 
-    '''
-    s_rho = [-0.983333333333333, -0.95, -0.916666666666667, -0.883333333333333, -0.85, -0.816666666666667,
-             -0.783333333333333, -0.75, -0.716666666666667, -0.683333333333333, -0.65, -0.616666666666667,
-             -0.583333333333333, -0.55, -0.516666666666667, -0.483333333333333, -0.45, -0.416666666666667,
-             -0.383333333333333, -0.35, -0.316666666666667, -0.283333333333333, -0.25, -0.216666666666667,
-             -0.183333333333333, -0.15, -0.116666666666667, -0.0833333333333333, -0.05, -0.0166666666666667]
-    s_rho = np.array(s_rho)
-    '''
+'''
+s_rho = [-0.983333333333333, -0.95, -0.916666666666667, -0.883333333333333, -0.85, -0.816666666666667,
+         -0.783333333333333, -0.75, -0.716666666666667, -0.683333333333333, -0.65, -0.616666666666667,
+         -0.583333333333333, -0.55, -0.516666666666667, -0.483333333333333, -0.45, -0.416666666666667,
+         -0.383333333333333, -0.35, -0.316666666666667, -0.283333333333333, -0.25, -0.216666666666667,
+         -0.183333333333333, -0.15, -0.116666666666667, -0.0833333333333333, -0.05, -0.0166666666666667]
+s_rho = np.array(s_rho)
+'''
 
-    angle = nc_mask.variables['angle'][:]
+angle = nc_mask.variables['angle'][:]
 
-    # lon2[0, :] lat2[:, 0]
+# lon2[0, :] lat2[:, 0]
 
-    # use the coordinate as key and index as value
+# use the coordinate as key and index as value
 
-    lon_dict = {lon2[0, j]: j for j in np.arange(0, len(lon2[0, :]))}
-    lat_dict = {lat2[j, 0]: j for j in np.arange(0, len(lat2[:, 0]))}
+lon_dict = {lon2[0, j]: j for j in np.arange(0, len(lon2[0, :]))}
+lat_dict = {lat2[j, 0]: j for j in np.arange(0, len(lat2[:, 0]))}
 
-    lon_dict_u = {lon2_u[0, j]: j for j in np.arange(0, len(lon2_u[0, :]))}
-    lat_dict_u = {lat2_u[j, 0]: j for j in np.arange(0, len(lat2_u[:, 0]))}
+lon_dict_u = {lon2_u[0, j]: j for j in np.arange(0, len(lon2_u[0, :]))}
+lat_dict_u = {lat2_u[j, 0]: j for j in np.arange(0, len(lat2_u[:, 0]))}
 
-    lon_dict_v = {lon2_v[0, j]: j for j in np.arange(0, len(lon2_v[0, :]))}
-    lat_dict_v = {lat2_v[j, 0]: j for j in np.arange(0, len(lat2_v[:, 0]))}
+lon_dict_v = {lon2_v[0, j]: j for j in np.arange(0, len(lon2_v[0, :]))}
+lat_dict_v = {lat2_v[j, 0]: j for j in np.arange(0, len(lat2_v[:, 0]))}
 
-    last_u = len(depth)
-    last_v = len(depth)
+last_u = len(depth)
+last_v = len(depth)
+if rank == 0:
     start = tm.time()
 
-    # interpolate h on u and v
-    h_u = griddata((lat2.flatten(), lon2.flatten()), h.flatten(), (lat2_u, lon2_u), method='linear')
-    h_u = np.reshape(h_u, (len(lat2_u[:, 0]), len(lon2_u[0, :])))
+# interpolate h on u and v
+h_u = griddata((lat2.flatten(), lon2.flatten()), h.flatten(), (lat2_u, lon2_u), method='linear')
+h_u = np.reshape(h_u, (len(lat2_u[:, 0]), len(lon2_u[0, :])))
 
-    h_v = griddata((lat2.flatten(), lon2.flatten()), h.flatten(), (lat2_v, lon2_v), method='linear')
-    h_v = np.reshape(h_v, (len(lat2_v[:, 0]), len(lon2_v[0, :])))
+h_v = griddata((lat2.flatten(), lon2.flatten()), h.flatten(), (lat2_v, lon2_v), method='linear')
+h_v = np.reshape(h_v, (len(lat2_v[:, 0]), len(lon2_v[0, :])))
 
-    # rotate u and v
-    # start_r = tm.time()
-    # for k in np.arange(0, len(depth)):
-    # uo[k], vo[k] = rotate(uo[k], vo[k], angle, 1.e+20)
-    # print("rotate time: ", tm.time() - start_r)
+# rotate u and v
+# start_r = tm.time()
+# for k in np.arange(0, len(depth)):
+# uo[k], vo[k] = rotate(uo[k], vo[k], angle, 1.e+20)
+# print("rotate time: ", tm.time() - start_r)
 
-    # interpolate current on u coordinate on longitude and latitude
-
+# interpolate current on u coordinate on longitude and latitude
+if rank == 0:
     start_x = tm.time()
 
     out2d_u = np.zeros((len(depth), len(lat2_u[:, 0]), len(lon2_u[0, :])))
     out2d_u[:] = np.nan
 
-    data = [uo, latf, lonf, lat2_u, lon2_u, depth, h_u, mask_u, lat_dict_u, lon_dict_u]
-    items = [(data, i) for i in np.arange(0, len(depth))]
-    with Pool(processes=20) as p:
-        result = p.starmap(interpolation_lat_lon, items)
+depth_rank = np.zeros((np.ceil(len(depth)/size)))
+depth_rank[:] = np.nan
+data = [uo, latf, lonf, lat2_u, lon2_u, depth, h_u, mask_u, lat_dict_u, lon_dict_u]
+comm.Scatter(depth, depth_rank, root=0)
+depth_rank = depth_rank[~np.isnan(depth_rank)]
+out2d_u_rank = np.zeros((len(depth_rank), len(lat2_u[:, 0]), len(lon2_u[0, :])))
+out2d_u_rank[:] = np.nan
 
-    # result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
+for i in np.arange(0, len(depth_rank)):
+    out2d_u_rank = interpolation_lat_lon(data, i)
+
+comm.barrier()
+comm.Gather(out2d_u_rank, out2d_u, root=0)
+
+if rank == 0:
 
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
-        out2d_u[i, :, :] = result[i]
         if np.isnan(out2d_u[i]).size == 0 and i < last_u:
             last_u = i
 
@@ -259,24 +265,26 @@ if __name__ == '__main__':
     out2d_v = np.zeros((len(depth), len(lat2_v[:, 0]), len(lon2_v[0, :])))
     out2d_v[:] = np.nan
 
-    data = [vo, latf, lonf, lat2_v, lon2_v, depth, h_v, mask_v, lat_dict_v, lon_dict_v]
-    items = [(data, i) for i in np.arange(0, len(depth))]
-    with Pool(processes=20) as p:
-        result = p.starmap(interpolation_lat_lon, items)
+data = [vo, latf, lonf, lat2_v, lon2_v, depth, h_v, mask_v, lat_dict_v, lon_dict_v]
 
-    # result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
+out2d_v_rank = np.zeros((len(depth_rank), len(lat2_v[:, 0]), len(lon2_v[0, :])))
+out2d_v_rank[:] = np.nan
+
+for i in np.arange(0, len(depth_rank)):
+    out2d_v_rank = interpolation_lat_lon(data, i)
+
+comm.barrier()
+comm.Gather(out2d_v_rank, out2d_v, root=0)
+if rank == 0:
 
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
-        out2d_v[i, :, :] = result[i]
         if np.isnan(out2d_v[i]).size == 0 and i < last_v:
             last_v = i
 
     out4_v = out2d_v[0:last_v, :, :]
 
     print("2d interpolation time:", tm.time() - start_x)
-
-    # ray.shutdown()
 
     # interpolate current on sigma
 
