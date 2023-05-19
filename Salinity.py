@@ -7,13 +7,9 @@ import xarray as xr
 from netCDF4 import Dataset
 from scipy.interpolate import griddata
 from scipy.interpolate import interp1d
-from multiprocessing import Pool
-# import ray
-
-# ray.init()
+from mpi4py import MPI
 
 
-# @ray.remote
 def interpolation_lat_lon(arr, i_local):
     so_local, latf_local, lonf_local, lat2_local, lon2_local, depth_local, h_local, mask_local, \
         lat_dict_local, lon_dict_local = arr
@@ -76,88 +72,98 @@ def interpolate_sigma(arr):
     return out_final_local
 
 
-if __name__ == '__main__':
+comm = MPI.COMM_WORLD
+size = comm.Get_size()
+rank = comm.Get_rank()
 
-    if len(sys.argv) != 6:
-        print("Usage: python " + str(sys.argv[0]) + "source_filename mask_filename destination_filename "
-                                                    "border_filename time")
-        sys.exit(-1)
 
-    src_filename = sys.argv[1]
-    mask_filename = sys.argv[2]
-    destination_filename = sys.argv[3]
-    border_filename = sys.argv[4]
-    time = int(sys.argv[5])
 
-    # source values
-    nc = xr.open_dataset(src_filename)
-    so = nc.variables['so'][:]
-    so = np.array(so[time, :, :, :])
+if len(sys.argv) != 6:
+    print("Usage: python " + str(sys.argv[0]) + "source_filename mask_filename destination_filename "
+                                                "border_filename time")
+    sys.exit(-1)
 
-    lon = nc.variables['lon'][:]
-    lat = nc.variables['lat'][:]
-    depth = nc.variables['depth'][:]
-    depth = np.array(depth)
+src_filename = sys.argv[1]
+mask_filename = sys.argv[2]
+destination_filename = sys.argv[3]
+border_filename = sys.argv[4]
+time = int(sys.argv[5])
 
-    nc_frame = nc.to_dataframe()
-    nc_frame = nc_frame.reset_index()
-    nc_frame = nc_frame.loc[nc_frame['time'] == nc_frame['time'][0]]
-    nc_framel = nc_frame.loc[nc_frame['depth'] == nc_frame['depth'][0]]
-    lonf = nc_framel['lon']
-    latf = nc_framel['lat']
-    lonf = np.array(lonf)
-    latf = np.array(latf)
+# source values
+nc = xr.open_dataset(src_filename)
+so = nc.variables['so'][:]
+so = np.array(so[time, :, :, :])
 
-    # destination grid
-    nc_grid = Dataset(destination_filename, "r+", format="NETCDF4_CLASSIC")
-    lon2 = nc_grid.variables['lon_rho'][:]
-    lat2 = nc_grid.variables['lat_rho'][:]
-    lon2 = np.array(lon2)
-    lat2 = np.array(lat2)
+lon = nc.variables['lon'][:]
+lat = nc.variables['lat'][:]
+depth = nc.variables['depth'][:]
+depth = np.array(depth)
 
-    h = nc_grid.variables['h'][:]
-    h = np.array(h)
+nc_frame = nc.to_dataframe()
+nc_frame = nc_frame.reset_index()
+nc_frame = nc_frame.loc[nc_frame['time'] == nc_frame['time'][0]]
+nc_framel = nc_frame.loc[nc_frame['depth'] == nc_frame['depth'][0]]
+lonf = nc_framel['lon']
+latf = nc_framel['lat']
+lonf = np.array(lonf)
+latf = np.array(latf)
 
-    s_rho = nc_grid.variables['s_rho'][:]
-    s_rho = np.array(s_rho)
+# destination grid
+nc_grid = Dataset(destination_filename, "r+", format="NETCDF4_CLASSIC")
+lon2 = nc_grid.variables['lon_rho'][:]
+lat2 = nc_grid.variables['lat_rho'][:]
+lon2 = np.array(lon2)
+lat2 = np.array(lat2)
 
-    nc_mask = Dataset(mask_filename, "r+")
-    mask = nc_mask.variables['mask_rho'][:]
-    mask = np.array(mask)
-    nc_mask.close()
+h = nc_grid.variables['h'][:]
+h = np.array(h)
 
-    # use the coordinate as key and index as value
-    lon_dict = {lon2[0, j]: j for j in np.arange(0, len(lon2[0, :]))}
-    lat_dict = {lat2[j, 0]: j for j in np.arange(0, len(lat2[:, 0]))}
+s_rho = nc_grid.variables['s_rho'][:]
+s_rho = np.array(s_rho)
 
-    last = len(depth)
+nc_mask = Dataset(mask_filename, "r+")
+mask = nc_mask.variables['mask_rho'][:]
+mask = np.array(mask)
+nc_mask.close()
+
+# use the coordinate as key and index as value
+lon_dict = {lon2[0, j]: j for j in np.arange(0, len(lon2[0, :]))}
+lat_dict = {lat2[j, 0]: j for j in np.arange(0, len(lat2[:, 0]))}
+
+last = len(depth)
+if rank == 0:
     start = tm.time()
 
     # interpolate salinity on longitude and latitude
-
+if rank == 0:
     start_x = tm.time()
 
     out2d = np.zeros((len(depth), len(lat2[:, 0]), len(lon2[0, :])))
     out2d[:] = np.nan
 
-    data = [so, latf, lonf, lat2, lon2, depth, h, mask, lat_dict, lon_dict]
-    items = [(data, i) for i in np.arange(0, len(depth))]
-    with Pool(processes=20) as p:
-        result = p.starmap(interpolation_lat_lon, items)
+depth_rank = np.zeros((np.ceil(len(depth)/size)))
+depth_rank[:] = np.nan
+data = [so, latf, lonf, lat2, lon2, depth, h, mask, lat_dict, lon_dict]
+comm.Scatter(depth, depth_rank, root=0)
+depth_rank = depth_rank[~np.isnan(depth_rank)]
+out2d_rank = np.zeros((len(depth_rank), len(lat2[:, 0]), len(lon2[0, :])))
+out2d_rank[:] = np.nan
 
-    # result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
+for i in np.arange(0, len(depth_rank)):
+    out2d_rank = interpolation_lat_lon(data, i)
+
+comm.barrier()
+comm.Gather(out2d_rank, out2d, root=0)
+if rank == 0:
 
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
-        out2d[i, :, :] = result[i]
         if np.isnan(out2d[i]).size == 0 and i < last:
             last = i
 
     out4 = out2d[0:last, :, :]
 
-    print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
-
-    # ray.shutdown()
+    print("2d interpolation time:", tm.time() - start_x)
 
     # interpolate temperature on sigma
 
