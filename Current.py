@@ -2,19 +2,14 @@ import sys
 import time as tm
 # import matplotlib.pyplot as plt
 import numpy as np
-import ray
 import xarray as xr
 # from mpl_toolkits.basemap import Basemap
 from netCDF4 import Dataset
 from scipy.interpolate import griddata
 from scipy.interpolate import interp1d
 from multiprocessing import Pool
-# import ray
-
-# ray.init()
 
 
-# @ray.remote
 def interpolation_lat_lon(arr, i_local):
     temp_local, latf_local, lonf_local, lat2_local, lon2_local, depth_local, h_local, mask_local, \
         lat_dict_local, lon_dict_local = arr
@@ -244,8 +239,6 @@ if __name__ == '__main__':
     with Pool(processes=20) as p:
         result = p.starmap(interpolation_lat_lon, items)
 
-    # result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
-
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
         out2d_u[i, :, :] = result[i]
@@ -264,8 +257,6 @@ if __name__ == '__main__':
     with Pool(processes=20) as p:
         result = p.starmap(interpolation_lat_lon, items)
 
-    # result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
-
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
         out2d_v[i, :, :] = result[i]
@@ -275,8 +266,6 @@ if __name__ == '__main__':
     out4_v = out2d_v[0:last_v, :, :]
 
     print("2d interpolation time:", tm.time() - start_x)
-
-    # ray.shutdown()
 
     # interpolate current on sigma
 

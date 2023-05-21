@@ -8,12 +8,8 @@ from netCDF4 import Dataset
 from scipy.interpolate import griddata
 from scipy.interpolate import interp1d
 from multiprocessing import Pool
-# import ray
-
-# ray.init()
 
 
-# @ray.remote
 def interpolation_lat_lon(arr, i_local):
     so_local, latf_local, lonf_local, lat2_local, lon2_local, depth_local, h_local, mask_local, \
         lat_dict_local, lon_dict_local = arr
@@ -46,7 +42,18 @@ def interpolation_lat_lon(arr, i_local):
         out3_local[lat_dict_local[lat_cons_local[k_local]], lon_dict_local[lon_cons_local[k_local]]] = out2_local[
             k_local]
 
-    return out3_local
+    out4_local = griddata((lat2_local[~np.isnan(out3_local)], lon2_local[~np.isnan(out3_local)]),
+                          out3_local[~np.isnan(out3_local)], (lat_cons_local, lon_cons_local), method='nearest')
+    out4_local = np.array(out4_local)
+
+    out5_local = np.zeros((len(lat2_local[:, 0]), len(lon2_local[0, :])))
+    out5_local[:] = np.nan
+
+    for k_local in np.arange(0, len(lon_cons_local)):
+        out5_local[lat_dict_local[lat_cons_local[k_local]], lon_dict_local[lon_cons_local[k_local]]] = out4_local[
+            k_local]
+
+    return out5_local
 
 
 def interpolate_sigma(arr):
@@ -145,8 +152,6 @@ if __name__ == '__main__':
     with Pool(processes=20) as p:
         result = p.starmap(interpolation_lat_lon, items)
 
-    # result = ray.get([interpolation_lat_lon.remote(data, i) for i in np.arange(0, len(depth))])
-
     # find the last index at witch we have data and move data to out2d
     for i in np.arange(0, len(depth)):
         out2d[i, :, :] = result[i]
@@ -156,8 +161,6 @@ if __name__ == '__main__':
     out4 = out2d[0:last, :, :]
 
     print("2d interpolation time:", tm.time() - start_x, "with ", 6, " processes")
-
-    # ray.shutdown()
 
     # interpolate temperature on sigma
 
