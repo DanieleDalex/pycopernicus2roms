@@ -78,7 +78,8 @@ def interpolate_sigma(arr):
 
             depth2 = np.abs(s_rho_local * h_local[i, j_local])
 
-            out_final_local[:, i, j_local] = np.interp(depth2, depth_act, z_local)
+            f = interp1d(depth_act, z_local, kind="slinear", fill_value="extrapolate")
+            out_final_local[:, i, j_local] = f(depth2)
 
     return out_final_local
 
