@@ -32,7 +32,7 @@ def interpolation_lat_lon(arr, i_local):
     lon_cons_local = np.array(lon_cons_local)
 
     spline = SmoothBivariateSpline(lat2_local[~np.isnan(out_local)], lon2_local[~np.isnan(out_local)],
-                                   out_local[~np.isnan(out_local)], kx=kxy_local, ky=kxy_local)
+                                   out_local[~np.isnan(out_local)], s=kxy_local)
 
     out2_local = spline(lat_cons_local, lon_cons_local, grid=False)
 
