@@ -225,7 +225,7 @@ if __name__ == '__main__':
 
     data = [uo, latf, lonf, lat2_u, lon2_u, depth, h_u, mask_u, lat_dict_u, lon_dict_u]
     items = [(data, i) for i in np.arange(0, len(depth))]
-    with Pool(processes=6) as p:
+    with Pool(processes=20) as p:
         result = p.starmap(interpolation_lat_lon, items)
 
     # find the last index at witch we have data and move data to out2d
@@ -243,7 +243,7 @@ if __name__ == '__main__':
 
     data = [vo, latf, lonf, lat2_v, lon2_v, depth, h_v, mask_v, lat_dict_v, lon_dict_v]
     items = [(data, i) for i in np.arange(0, len(depth))]
-    with Pool(processes=6) as p:
+    with Pool(processes=20) as p:
         result = p.starmap(interpolation_lat_lon, items)
 
     # find the last index at witch we have data and move data to out2d
