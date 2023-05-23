@@ -11,9 +11,9 @@ from multiprocessing import Pool
 from scipy.interpolate import SmoothBivariateSpline
 
 
-def interpolation_lat_lon(arr, i_local, kxy_local):
+def interpolation_lat_lon(arr, i_local):
     temp_local, latf_local, lonf_local, lat2_local, lon2_local, depth_local, h_local, mask_local, \
-        lat_dict_local, lon_dict_local = arr
+        lat_dict_local, lon_dict_local, kxy_local = arr
 
     z_local = np.array(temp_local[i_local, :, :]).flatten()
     out_local = griddata((latf_local, lonf_local), z_local, (lat2_local, lon2_local), method='linear')
@@ -190,10 +190,10 @@ if __name__ == '__main__':
         out2d_u = np.zeros((len(depth), len(lat2_u[:, 0]), len(lon2_u[0, :])))
         out2d_u[:] = np.nan
 
-        data = [uo, latf, lonf, lat2_u, lon2_u, depth, h_u, mask_u, lat_dict_u, lon_dict_u]
+        data = [uo, latf, lonf, lat2_u, lon2_u, depth, h_u, mask_u, lat_dict_u, lon_dict_u, k]
         items = [(data, i) for i in np.arange(0, len(depth))]
         with Pool(processes=20) as p:
-            result = p.starmap(interpolation_lat_lon, items, k)
+            result = p.starmap(interpolation_lat_lon, items)
 
         # find the last index at witch we have data and move data to out2d
         for i in np.arange(0, len(depth)):
@@ -208,10 +208,10 @@ if __name__ == '__main__':
         out2d_v = np.zeros((len(depth), len(lat2_v[:, 0]), len(lon2_v[0, :])))
         out2d_v[:] = np.nan
 
-        data = [vo, latf, lonf, lat2_v, lon2_v, depth, h_v, mask_v, lat_dict_v, lon_dict_v]
+        data = [vo, latf, lonf, lat2_v, lon2_v, depth, h_v, mask_v, lat_dict_v, lon_dict_v, k]
         items = [(data, i) for i in np.arange(0, len(depth))]
         with Pool(processes=20) as p:
-            result = p.starmap(interpolation_lat_lon, items, k)
+            result = p.starmap(interpolation_lat_lon, items)
 
         # find the last index at witch we have data and move data to out2d
         for i in np.arange(0, len(depth)):
