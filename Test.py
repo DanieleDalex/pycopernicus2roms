@@ -179,7 +179,7 @@ if __name__ == '__main__':
     best = np.nan
     best_k = np.nan
 
-    for k in np.arange(0, (len(lon2 * lat2)/2)):
+    for k in np.arange(3, (len(lon2 * lat2)/2)):
 
         print("iniziamo la k numero: ", k)
 
