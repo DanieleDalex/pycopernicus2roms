@@ -31,7 +31,7 @@ def interpolation_lat_lon(arr, i_local):
     lon_cons_local = np.array(lon_cons_local)
 
     spline = SmoothBivariateSpline(lat2_local[~np.isnan(out_local)], lon2_local[~np.isnan(out_local)],
-                                   out_local[~np.isnan(out_local)])
+                                   out_local[~np.isnan(out_local)], s=1)
 
     out2_local = spline(lat_cons_local, lon_cons_local, grid=False)
 
@@ -67,8 +67,7 @@ def interpolate_sigma(arr):
 
             depth2 = np.abs(s_rho_local * h_local[i, j_local])
 
-            f = interp1d(depth_act, z_local, kind="slinear", fill_value="extrapolate")
-            out_final_local[:, i, j_local] = f(depth2)
+            out_final_local[:, i, j_local] = np.interp(depth2, depth_act, z_local)
 
     return out_final_local
 
