@@ -8,7 +8,6 @@ from netCDF4 import Dataset
 from scipy.interpolate import griddata
 from scipy.interpolate import interp1d
 from multiprocessing import Pool
-from scipy.interpolate import SmoothBivariateSpline
 
 
 def interpolation_lat_lon(arr, i_local):
@@ -31,10 +30,10 @@ def interpolation_lat_lon(arr, i_local):
     lat_cons_local = np.array(lat_cons_local)
     lon_cons_local = np.array(lon_cons_local)
 
-    spline = SmoothBivariateSpline(lat2_local[~np.isnan(out_local)], lon2_local[~np.isnan(out_local)],
-                                   out_local[~np.isnan(out_local)], s=1)
+    out2_local = griddata((lat2_local[~np.isnan(out_local)], lon2_local[~np.isnan(out_local)]),
+                          out_local[~np.isnan(out_local)], (lat_cons_local, lon_cons_local), method='linear')
 
-    out2_local = spline(lat_cons_local, lon_cons_local, grid=False)
+    out2_local = np.array(out2_local)
 
     out3_local = np.zeros((len(lat2_local[:, 0]), len(lon2_local[0, :])))
     out3_local[:] = np.nan
@@ -43,7 +42,18 @@ def interpolation_lat_lon(arr, i_local):
         out3_local[lat_dict_local[lat_cons_local[k_local]], lon_dict_local[lon_cons_local[k_local]]] = out2_local[
             k_local]
 
-    return out3_local
+    out4_local = griddata((lat2_local[~np.isnan(out3_local)], lon2_local[~np.isnan(out3_local)]),
+                          out3_local[~np.isnan(out3_local)], (lat_cons_local, lon_cons_local), method='nearest')
+    out4_local = np.array(out4_local)
+
+    out5_local = np.zeros((len(lat2_local[:, 0]), len(lon2_local[0, :])))
+    out5_local[:] = np.nan
+
+    for k_local in np.arange(0, len(lon_cons_local)):
+        out5_local[lat_dict_local[lat_cons_local[k_local]], lon_dict_local[lon_cons_local[k_local]]] = out4_local[
+            k_local]
+
+    return out5_local
 
 
 def interpolate_sigma(arr):
@@ -64,7 +74,10 @@ def interpolate_sigma(arr):
                 out_final_local[:, i, j_local] = z_local
                 continue
 
+            z_local = np.resize(z_local, len(z_local) + 1)
+            z_local[-1] = 0
             depth_act = depth_local[0:len(z_local)]
+            depth_act[-1] = h_local[i, j_local] + (h_local[i, j_local] * 0.05)
 
             depth2 = np.abs(s_rho_local * h_local[i, j_local])
 
