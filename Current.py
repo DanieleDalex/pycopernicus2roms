@@ -77,7 +77,7 @@ def interpolate_sigma(arr):
             z_local = np.resize(z_local, len(z_local) + 1)
             z_local[-1] = 0
             depth_act = depth_local[0:len(z_local)]
-            depth_act[-1] = h_local[i, j_local] + (h_local[i, j_local] * 0.05)
+            depth_act[-1] = h_local[i, j_local]
 
             depth2 = np.abs(s_rho_local * h_local[i, j_local])
 
